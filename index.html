@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nu ESP Beta - Field Sales System</title>
+    <title>Nu ESP Beta - Cloud Sync System</title>
+    <!-- SDK Supabase dari CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #0F172A;
@@ -25,7 +27,6 @@
         header button { background: var(--danger); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
 
         .banner { background: #E0E7FF; color: #3730A3; padding: 8px 20px; font-size: 0.8rem; font-weight: 500; display: flex; justify-content: space-between; }
-        
         .container { max-width: 480px; margin: 20px auto; padding: 0 15px; }
         .page { display: none; }
         .page.active { display: block; }
@@ -58,22 +59,11 @@
         .qty-btn { width: 30px; height: 30px; border: 1px solid var(--border); background: white; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .display-qty { font-weight: 600; min-width: 20px; text-align: center; }
 
-        .log-item { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.85rem; }
-        .log-header { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 4px; }
-        .log-outlet { color: var(--accent); font-weight: 600; }
-        
-        .verification-row, .trx-audit-row, .sales-row { background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.85rem; }
+        .trx-audit-row, .verification-row { background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.85rem; }
         .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; display: inline-block; margin-bottom: 2px; }
         .badge-success { background: #DCFCE7; color: var(--success); }
         .badge-danger { background: #FEE2E2; color: var(--danger); }
         .badge-warning { background: #FEF3C7; color: var(--warning); }
-
-        /* PRINT STYLING */
-        @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; }
-        }
 
         .hidden { display: none !important; }
     </style>
@@ -115,12 +105,12 @@
                     <div class="menu-btn" onclick="page.show('reg')">📍 Registrasi Toko Baru</div>
                     <div class="menu-btn" onclick="page.show('exch')">🛒 Catat Transaksi</div>
                     <div class="menu-btn" onclick="page.show('log')">📊 Daily Log & Rekap</div>
-                    <div class="menu-btn" onclick="dataMgr.exportJSON()">💾 Backup Data JSON</div>
+                    <div class="menu-btn" onclick="app.logout()">🔄 Ganti Akun</div>
                 </div>
             </div>
         </div>
 
-        <!-- 3. HALAMAN REGISTRASI TOKO (PENDING / APPROVAL SPV) -->
+        <!-- 3. REGISTRASI TOKO -->
         <div id="reg-page" class="page">
             <div class="card">
                 <h2>Registrasi Outlet Resmi</h2>
@@ -143,16 +133,15 @@
                         <button class="btn btn-secondary" style="width: 120px; margin-top: 0;" onclick="geo.getLocation('out-gps')">Ambil GPS</button>
                     </div>
                 </div>
-                <button class="btn btn-success" onclick="outletMgr.register()">Submit Toko (Menunggu Verifikasi SPV)</button>
+                <button class="btn btn-success" onclick="outletMgr.register()">Submit Toko (Kirim ke Cloud)</button>
                 <button class="btn btn-secondary" onclick="page.show('dash')">Kembali</button>
             </div>
         </div>
 
-        <!-- 4. HALAMAN TRANSAKSI (FLEXIBEL: REGISTER & NON-REGISTER) -->
+        <!-- 4. TRANSAKSI -->
         <div id="exch-page" class="page">
             <div class="card">
                 <h2>Input Transaksi Penjualan</h2>
-                
                 <div class="form-group">
                     <label>Pilih Jenis Transaksi Outlet</label>
                     <select id="exch-mode-select" class="form-control" onchange="exchMgr.toggleOutletMode()">
@@ -160,119 +149,61 @@
                         <option value="NON_REGISTERED">Toko Non-Register / Temuan Baru (Ad-hoc)</option>
                     </select>
                 </div>
-
-                <!-- Opsi 1: Dropdown Toko Terverifikasi -->
                 <div class="form-group" id="group-reg-outlet">
                     <label>Pilih Toko Terdaftar</label>
                     <select id="exch-outlet-select" class="form-control"></select>
                 </div>
-
-                <!-- Opsi 2: Input Manual Toko Non-Register -->
                 <div class="form-group hidden" id="group-non-reg-outlet">
-                    <label>Nama Toko Temuan Baru / Non-Register</label>
-                    <input type="text" id="exch-non-reg-name" class="form-control" placeholder="Contoh: Warung Pinggir Jalan (Bebas)">
+                    <label>Nama Toko Temuan Baru</label>
+                    <input type="text" id="exch-non-reg-name" class="form-control" placeholder="Nama Toko">
                 </div>
-
                 <div class="form-group">
-                    <label>GPS Saat Transaksi (Auto Capture)</label>
+                    <label>GPS Transaksi (Auto Capture)</label>
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="exch-gps" class="form-control" placeholder="GPS Lokasi Sales Sekarang" readonly>
+                        <input type="text" id="exch-gps" class="form-control" readonly>
                         <button class="btn btn-secondary" style="width: 120px; margin-top: 0;" onclick="geo.getLocation('exch-gps')">Update GPS</button>
                     </div>
                 </div>
-
-                <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
-                    <span>⏱️ Durasi Kunjungan:</span>
-                    <strong id="visit-timer-display" style="color: var(--accent); font-size: 1rem;">00:00</strong>
-                </div>
-
-                <div style="margin: 15px 0 5px 0; font-weight: 600; font-size: 0.9rem;">Katalog Produk (Muatan Pagi)</div>
+                <div style="margin: 15px 0 5px 0; font-weight: 600; font-size: 0.9rem;">Katalog Produk</div>
                 <div id="product-list" style="margin-bottom: 15px;"></div>
-
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 1.1rem;">
                     <span>Total Tagihan:</span>
                     <span id="cart-total" style="color: var(--accent);">Rp 0</span>
                 </div>
-
-                <button class="btn btn-success" onclick="exchMgr.submit()">Submit & Cetak Nota</button>
+                <button class="btn btn-success" onclick="exchMgr.submit()">Submit & Simpan ke Cloud</button>
                 <button class="btn btn-secondary" onclick="page.show('dash')">Kembali</button>
             </div>
         </div>
 
-        <!-- 5. HALAMAN DAILY LOG & REKAP -->
+        <!-- 5. DAILY LOG -->
         <div id="log-page" class="page">
             <div class="card">
                 <h2>Daily Log & Rekap Shift</h2>
-                <div style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 10px;" id="log-sales-info">Sales: -</div>
-                
-                <div class="kpi-box" style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <div class="kpi-card" style="flex: 1; background: #F1F5F9; padding: 12px; border-radius: 8px; text-align: center;">
-                        <div class="kpi-val" id="kpi-ec-val" style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">0</div>
-                        <div class="kpi-label" style="font-size: 0.75rem; color: var(--text-light);">Total EC (Toko)</div>
-                    </div>
-                    <div class="kpi-card" style="flex: 1; background: #F1F5F9; padding: 12px; border-radius: 8px; text-align: center;">
-                        <div class="kpi-val" id="kpi-vol-val" style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">0</div>
-                        <div class="kpi-label" style="font-size: 0.75rem; color: var(--text-light);">Total Volume Item</div>
-                    </div>
-                </div>
-
                 <div id="log-container" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
-
-                <button class="btn btn-primary" style="background: #25D366;" onclick="dataMgr.shareWA()">Kirim Rekap ke WA</button>
-                <button class="btn btn-secondary" style="background: #FEE2E2; color: var(--danger); border: 1px solid #FCA5A5;" onclick="dataMgr.resetShift()">Reset Shift Hari Ini</button>
                 <button class="btn btn-secondary" onclick="page.show('dash')">Kembali</button>
             </div>
         </div>
 
-        <!-- 6. HALAMAN ADMIN & SPV MONITORING -->
+        <!-- 6. PANEL ADMIN & SPV -->
         <div id="admin-page" class="page">
             <div class="card">
                 <h2>Panel SPV & Admin Gudang</h2>
                 
-                <!-- SPV MONITORING DASHBOARD -->
-                <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                    <h3 style="font-size: 0.9rem; color: #1E40AF; margin-bottom: 8px;">📈 SPV Field Monitoring (Audit & Durasi)</h3>
-                    <div style="font-size: 0.85rem; display: flex; justify-content: space-between; margin-bottom: 4px;">
-                        <span>Total Omzet Area:</span>
-                        <strong id="spv-total-omzet" style="color: var(--accent);">Rp 0</strong>
-                    </div>
-                    <div style="font-size: 0.85rem; display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span>Toko Terverifikasi Aktif:</span>
-                        <strong id="spv-active-outlets">0 Toko</strong>
-                    </div>
-                    <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 4px;" onclick="adminMgr.exportToCSV()">📥 Download Maps CSV (Babat Alas)</button>
+                <!-- TOMBOL SINKRONISASI OTOMATIS -->
+                <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+                    <h3 style="font-size: 0.95rem; color: #1E40AF; margin-bottom: 8px;">☁️ Sinkronisasi Cloud Server</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 10px;">Tarik data transaksi & toko terbaru dari HP sales secara real-time.</p>
+                    <button class="btn btn-primary" onclick="adminMgr.syncData()">🔄 Sinkronisasi Data Sekarang</button>
                 </div>
 
-                <!-- MANAJEMEN SALES (TAMBAH SALES VIA APPS) -->
-                <div style="background: #F8FAFC; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                    <h3 style="font-size: 0.9rem; color: var(--primary); margin-bottom: 8px;">👥 Manajemen Akun Sales (In-App)</h3>
-                    <div class="form-group" style="margin-bottom: 8px;">
-                        <label style="font-size: 0.75rem;">ID / Kode Sales Baru (Contoh: A 02)</label>
-                        <input type="text" id="new-sales-id" class="form-control" placeholder="Contoh: A 02" style="font-size: 0.85rem; padding: 6px;">
-                    </div>
-                    <button class="btn btn-success btn-sm" style="width: 100%; margin-top: 0;" onclick="adminMgr.registerSales()">+ Daftarkan Sales Baru</button>
-                    
-                    <div style="margin-top: 10px; font-size: 0.8rem; font-weight: 600; color: var(--text-light);">Daftar Sales Terdaftar:</div>
-                    <div id="admin-sales-list" style="margin-top: 6px; max-height: 120px; overflow-y: auto;"></div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Total Omzet Area:</strong> <span id="spv-total-omzet" style="color: var(--accent);">Rp 0</span>
                 </div>
 
-                <!-- INJECT CSV SECTION -->
-                <div style="background: #F8FAFC; border: 1px dashed var(--border); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                    <h3 style="font-size: 0.85rem; margin-bottom: 8px; color: var(--primary);">📂 Inject Data via File CSV (Bulk Import)</h3>
-                    <div class="form-group" style="margin-bottom: 8px;">
-                        <label style="font-size: 0.75rem;">Upload Master Produk Pagi (.csv)</label>
-                        <input type="file" id="csv-prod-file" class="form-control" accept=".csv" style="font-size: 0.8rem; padding: 6px;" onchange="adminMgr.injectProducts(event)">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-size: 0.75rem;">Upload Master Toko / Register (.csv)</label>
-                        <input type="file" id="csv-outlet-file" class="form-control" accept=".csv" style="font-size: 0.8rem; padding: 6px;" onchange="adminMgr.injectOutlets(event)">
-                    </div>
-                </div>
-
-                <h3 style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 10px;">Audit Transaksi & Tipe Outlet</h3>
+                <h3 style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 10px;">Audit Transaksi Masuk</h3>
                 <div id="admin-trx-audit-list" style="margin-bottom: 15px;"></div>
 
-                <h3 style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 10px;">Antrean Verifikasi Toko Baru (Otoritas SPV)</h3>
+                <h3 style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 10px;">Antrean Verifikasi Toko Baru</h3>
                 <div id="admin-verification-list" style="margin-bottom: 15px;"></div>
 
                 <button class="btn btn-secondary" onclick="page.show('dash')">Keluar Panel SPV</button>
@@ -281,76 +212,37 @@
 
     </div>
 
-    <!-- AREA CETAK NOTA (TERMAL PRINT) -->
-    <div id="print-area" class="hidden">
-        <div style="text-align: center; font-family: monospace;">
-            <h3 style="margin-bottom: 2px;">NU ESP DISTRIBUTION</h3>
-            <p style="font-size: 0.8rem; margin-bottom: 10px;">Nota Penjualan Resmi Lapangan</p>
-            <hr style="border: dashed 1px #000; margin-bottom: 10px;">
-            <div id="print-meta" style="text-align: left; font-size: 0.85rem; margin-bottom: 10px;"></div>
-            <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse; text-align: left;" id="print-table">
-                <thead>
-                    <tr style="border-bottom: 1px solid #000;">
-                        <th>Item</th>
-                        <th>Qty</th>
-                        <th>Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody id="print-tbody"></tbody>
-            </table>
-            <hr style="border: dashed 1px #000; margin: 10px 0;">
-            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 0.95rem;">
-                <span>TOTAL:</span>
-                <span id="print-total">Rp 0</span>
-            </div>
-            <p style="font-size: 0.75rem; margin-top: 15px;">Terima kasih atas kerjasamanya!<br>Barang yang sudah dibeli tidak dapat ditukar.</p>
-        </div>
-    </div>
-
     <script>
+        // ==========================================
+        // KONFIGURASI SUPABASE (Sudah diisi otomatis)
+        // ==========================================
+        const SUPABASE_URL = 'https://ucddlrtktokvnntedvai.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_1b82XK-h3x8rhTMn97E9EA_QLsfdZqa'; // Ganti pakai full Publishable key lu yang panjang dari Supabase
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let defaultProducts = [
             { name: "Nupuca Kopi Original (1 Dus)", price: 150000, stock: 100 },
             { name: "Nupuca Kopi Jahe (1 Renceng)", price: 50000, stock: 150 }
         ];
 
-        let defaultSales = ["A 01"];
-
         let app = {
             currentUser: null,
             currentRegion: 'AREA-A',
-            init: function() {
-                if(!localStorage.getItem('np_products')) {
-                    localStorage.setItem('np_products', JSON.stringify(defaultProducts));
-                }
-                if(!localStorage.getItem('np_sales_list')) {
-                    localStorage.setItem('np_sales_list', JSON.stringify(defaultSales));
-                }
-            },
             login: function() {
-                let id = document.getElementById('login-id').value.trim();
+                let id = document.getElementById('login-id').value.trim().toUpperCase();
                 let pin = document.getElementById('login-pin').value.trim();
 
                 if(!id || pin.length !== 4) {
-                    alert("Masukkan ID dan PIN 4-Digit dengan benar!");
+                    alert("Masukkan ID dan PIN 4-Digit!");
                     return;
-                }
-                
-                let upperId = id.toUpperCase();
-                if(upperId !== 'ADMIN' && upperId !== 'SPV') {
-                    let salesList = JSON.parse(localStorage.getItem('np_sales_list') || '[]');
-                    let found = salesList.some(s => s.toLowerCase() === id.toLowerCase());
-                    if(!found) {
-                        alert("ID Sales tidak terdaftar! Minta Admin untuk mendaftarkan ID ini di Panel SPV.");
-                        return;
-                    }
                 }
 
                 this.currentUser = id;
                 document.getElementById('header-sales-name').innerText = `${id} (${this.currentRegion})`;
                 document.getElementById('app-header').classList.remove('hidden');
                 document.getElementById('status-banner').classList.remove('hidden');
-                
-                if(upperId === 'ADMIN' || upperId === 'SPV') {
+
+                if(id === 'ADMIN' || id === 'SPV') {
                     page.show('admin');
                 } else {
                     page.show('dash');
@@ -367,130 +259,82 @@
         let page = {
             show: function(id) {
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                if(id === 'dash') {
-                    document.getElementById('dashboard-page').classList.add('active');
-                    exchMgr.stopTimer();
-                }
-                else if(id === 'reg') {
-                    document.getElementById('reg-page').classList.add('active');
-                    exchMgr.stopTimer();
-                }
-                else if(id === 'exch') { 
-                    document.getElementById('exch-page').classList.add('active'); 
-                    exchMgr.loadForm(); 
-                }
-                else if(id === 'log') { 
-                    document.getElementById('log-page').classList.add('active'); 
-                    logMgr.loadLog(); 
-                    exchMgr.stopTimer();
-                }
-                else if(id === 'admin') { 
-                    document.getElementById('admin-page').classList.add('active'); 
-                    adminMgr.loadAdminPanel(); 
-                    exchMgr.stopTimer();
-                }
-                else {
-                    document.getElementById('login-page').classList.add('active');
-                    exchMgr.stopTimer();
-                }
+                if(id === 'dash') document.getElementById('dashboard-page').classList.add('active');
+                else if(id === 'reg') document.getElementById('reg-page').classList.add('active');
+                else if(id === 'exch') { document.getElementById('exch-page').classList.add('active'); exchMgr.loadForm(); }
+                else if(id === 'log') { document.getElementById('log-page').classList.add('active'); logMgr.loadLog(); }
+                else if(id === 'admin') { document.getElementById('admin-page').classList.add('active'); adminMgr.syncData(); }
+                else document.getElementById('login-page').classList.add('active');
             }
         };
 
         let geo = {
             getLocation: function(elementId) {
                 if (navigator.geolocation) {
-                    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-                        let manualGps = prompt("Browser memblokir GPS otomatis (karena non-HTTPS). Masukkan koordinat (Lat, Lng) secara manual:", "-6.200000, 106.816666");
-                        if(manualGps) {
-                            document.getElementById(elementId).value = manualGps;
-                        }
-                        return;
-                    }
-
                     navigator.geolocation.getCurrentPosition(pos => {
                         document.getElementById(elementId).value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
                     }, (err) => {
-                        console.error(err);
-                        alert("Gagal mengambil GPS. Pastikan izin lokasi aktif dan sinyal GPS stabil.");
+                        let manual = prompt("GPS otomatis gagal/non-aktif. Masukkan koordinat manual (Lat, Lng):", "-6.200000, 106.816666");
+                        if(manual) document.getElementById(elementId).value = manual;
                     }, { timeout: 10000, enableHighAccuracy: true });
                 } else {
                     alert("GPS tidak didukung browser ini.");
                 }
-            },
-            calcDistance: function(lat1, lon1, lat2, lon2) {
-                let R = 6371e3; // meter
-                let dLat = (lat2 - lat1) * Math.PI / 180;
-                let dLon = (lon2 - lon1) * Math.PI / 180;
-                let a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                        Math.sin(dLon/2) * Math.sin(dLon/2);
-                let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                return R * c; 
             }
         };
 
         let outletMgr = {
-            register: function() {
+            register: async function() {
                 let name = document.getElementById('out-name').value.trim();
                 let gps = document.getElementById('out-gps').value.trim();
-                if(!name || !gps) {
-                    alert("Nama toko dan titik GPS wajib diisi!");
-                    return;
-                }
-                let key = `np_outlets_${app.currentRegion}`;
-                let outlets = JSON.parse(localStorage.getItem(key) || '[]');
-                
-                outlets.push({ 
-                    id_toko: `TKG-${Date.now().toString().slice(-6)}`, 
-                    name, 
-                    phone: document.getElementById('out-phone').value || '-', 
-                    addr: document.getElementById('out-address').value || '-', 
-                    gps, 
+                if(!name || !gps) { alert("Nama toko dan GPS wajib diisi!"); return; }
+
+                let newOutlet = {
+                    id_toko: `TKG-${Date.now().toString().slice(-6)}`,
+                    name,
+                    phone: document.getElementById('out-phone').value || '-',
+                    addr: document.getElementById('out-address').value || '-',
+                    gps,
                     sales: app.currentUser,
-                    status: 'PENDING' 
-                });
-                
-                localStorage.setItem(key, JSON.stringify(outlets));
-                alert("Registrasi toko berhasil dikirim! Menunggu tinjauan & verifikasi SPV.");
-                document.getElementById('out-name').value = '';
-                document.getElementById('out-phone').value = '';
-                document.getElementById('out-address').value = '';
-                document.getElementById('out-gps').value = '';
-                page.show('dash');
+                    region: app.currentRegion,
+                    status: 'PENDING'
+                };
+
+                const { error } = await supabaseClient.from('outlets').insert([newOutlet]);
+                if(error) {
+                    alert("Gagal kirim ke cloud: " + error.message);
+                } else {
+                    alert("Registrasi toko berhasil dikirim ke Cloud SPV!");
+                    page.show('dash');
+                }
             }
         };
 
         let exchMgr = {
             qtys: {},
-            timerInterval: null,
-            startTime: null,
-            elapsedSeconds: 0,
-            loadForm: function() {
+            loadForm: async function() {
                 document.getElementById('exch-mode-select').value = 'REGISTERED';
                 this.toggleOutletMode();
-
-                let select = document.getElementById('exch-outlet-select');
-                let key = `np_outlets_${app.currentRegion}`;
-                let outlets = JSON.parse(localStorage.getItem(key) || '[]');
-                
-                select.innerHTML = `<option value="">-- Pilih Toko Terverifikasi --</option>`;
-                outlets.filter(o => o.status === 'VERIFIED').forEach(o => {
-                    select.innerHTML += `<option value="${o.name}" data-gps="${o.gps}">${o.name} (${o.id_toko})</option>`;
-                });
-
                 geo.getLocation('exch-gps');
-                this.startTimer();
 
-                let products = JSON.parse(localStorage.getItem('np_products') || '[]');
+                let { data: outlets } = await supabaseClient.from('outlets').select('*').eq('region', app.currentRegion).eq('status', 'VERIFIED');
+                let select = document.getElementById('exch-outlet-select');
+                select.innerHTML = `<option value="">-- Pilih Toko Terverifikasi --</option>`;
+                if(outlets) {
+                    outlets.forEach(o => {
+                        select.innerHTML += `<option value="${o.name}">${o.name} (${o.id_toko})</option>`;
+                    });
+                }
+
                 let pList = document.getElementById('product-list');
                 pList.innerHTML = '';
                 this.qtys = {};
-                products.forEach((p, index) => {
+                defaultProducts.forEach((p, index) => {
                     pList.innerHTML += `
                         <div class="product-card">
                             <div class="product-info">
                                 <div class="product-name">${p.name}</div>
-                                <div class="product-price">Rp ${p.price.toLocaleString()} (Stok Pagi: ${p.stock || 0})</div>
+                                <div class="product-price">Rp ${p.price.toLocaleString()}</div>
                             </div>
                             <div class="qty-control">
                                 <button class="qty-btn" onclick="exchMgr.adjust(${index}, -1)">-</button>
@@ -512,428 +356,124 @@
                     document.getElementById('group-non-reg-outlet').classList.remove('hidden');
                 }
             },
-            startTimer: function() {
-                this.stopTimer();
-                this.elapsedSeconds = 0;
-                this.startTime = Date.now();
-                this.timerInterval = setInterval(() => {
-                    this.elapsedSeconds++;
-                    let mins = Math.floor(this.elapsedSeconds / 60);
-                    let secs = this.elapsedSeconds % 60;
-                    document.getElementById('visit-timer-display').innerText = 
-                        `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                }, 1000);
-            },
-            stopTimer: function() {
-                if(this.timerInterval) {
-                    clearInterval(this.timerInterval);
-                    this.timerInterval = null;
-                }
-            },
             adjust: function(index, delta) {
                 if(!this.qtys[index]) this.qtys[index] = 0;
                 this.qtys[index] += delta;
                 if(this.qtys[index] < 0) this.qtys[index] = 0;
                 document.getElementById(`qty-${index}`).innerText = this.qtys[index];
-                this.calcTotal();
-            },
-            calcTotal: function() {
-                let products = JSON.parse(localStorage.getItem('np_products') || '[]');
+                
                 let total = 0;
-                for(let idx in this.qtys) total += (this.qtys[idx] * products[idx].price);
+                for(let idx in this.qtys) total += (this.qtys[idx] * defaultProducts[idx].price);
                 document.getElementById('cart-total').innerText = 'Rp ' + total.toLocaleString();
             },
-            submit: function() {
+            submit: async function() {
                 let mode = document.getElementById('exch-mode-select').value;
-                let outlet = '';
-                let outletType = mode === 'REGISTERED' ? 'REGISTERED' : 'NON_REGISTERED';
-                let isMatched = true;
-                let distanceMeters = 0;
-
-                if(outletType === 'REGISTERED') {
-                    let selectEl = document.getElementById('exch-outlet-select');
-                    outlet = selectEl.value;
-                    if(!outlet) { alert("Pilih toko terverifikasi terlebih dahulu!"); return; }
-
-                    let transGps = document.getElementById('exch-gps').value.trim();
-                    if(!transGps) { alert("Titik GPS transaksi belum diambil!"); return; }
-
-                    let selectedOption = selectEl.options[selectEl.selectedIndex];
-                    let storeGps = selectedOption.getAttribute('data-gps') || "0,0";
-                    let [sLat, sLng] = storeGps.split(',').map(Number);
-                    let [tLat, tLng] = transGps.split(',').map(Number);
-                    distanceMeters = geo.calcDistance(sLat, sLng, tLat, tLng);
-                    isMatched = distanceMeters <= 100;
-                } else {
-                    outlet = document.getElementById('exch-non-reg-name').value.trim();
-                    if(!outlet) { alert("Nama toko temuan baru wajib diisi!"); return; }
-                }
-
+                let outlet = mode === 'REGISTERED' ? document.getElementById('exch-outlet-select').value : document.getElementById('exch-non-reg-name').value.trim();
                 let transGps = document.getElementById('exch-gps').value.trim();
-                if(!transGps) { alert("Titik GPS transaksi belum diambil!"); return; }
+                
+                if(!outlet || !transGps) { alert("Pilih toko dan pastikan GPS aktif!"); return; }
 
-                this.stopTimer();
-                let durationMinutes = this.elapsedSeconds / 60;
-
-                let durationStatus = 'IDEAL';
-                if(durationMinutes < 5) durationStatus = 'TOO_FAST';
-                else if(durationMinutes > 15) durationStatus = 'TOO_LONG';
-
-                let products = JSON.parse(localStorage.getItem('np_products') || '[]');
                 let items = [], totalVal = 0, totalVol = 0;
                 for(let idx in this.qtys) {
                     if(this.qtys[idx] > 0) {
-                        let p = products[idx];
+                        let p = defaultProducts[idx];
                         let sub = this.qtys[idx] * p.price;
                         items.push({ name: p.name, qty: this.qtys[idx], sub });
                         totalVal += sub; totalVol += this.qtys[idx];
                     }
                 }
-                if(totalVal === 0) { alert("Keranjang belanja masih kosong!"); return; }
+                if(totalVal === 0) { alert("Keranjang kosong!"); return; }
 
-                let logKey = `np_transactions_${app.currentRegion}`;
-                let logs = JSON.parse(localStorage.getItem(logKey) || '[]');
-                let newTrx = { 
-                    time: new Date().toLocaleTimeString(), 
-                    date: new Date().toLocaleDateString(), 
-                    sales: app.currentUser, 
-                    region: app.currentRegion, 
-                    outlet, 
-                    outletType, 
-                    items, 
-                    totalVal, 
+                let newTrx = {
+                    time: new Date().toLocaleTimeString(),
+                    date: new Date().toLocaleDateString(),
+                    sales: app.currentUser,
+                    region: app.currentRegion,
+                    outlet,
+                    outletType: mode,
+                    items,
+                    totalVal,
                     totalVol,
-                    gpsTrans: transGps,
-                    distance: Math.round(distanceMeters),
-                    statusMatch: isMatched ? 'MATCHED' : 'MISSED',
-                    durationSec: this.elapsedSeconds,
-                    durationStatus: durationStatus
+                    gpsTrans: transGps
                 };
-                logs.push(newTrx);
-                localStorage.setItem(logKey, JSON.stringify(logs));
 
-                this.printReceipt(newTrx);
-                alert("Transaksi Berhasil Disimpan & Nota Tercetak!");
-                page.show('dash');
-            },
-            printReceipt: function(trx) {
-                document.getElementById('print-meta').innerHTML = `
-                    Toko: ${trx.outlet} (${trx.outletType === 'REGISTERED' ? 'Reg' : 'Non-Reg'})<br>
-                    Sales: ${trx.sales}<br>
-                    Waktu: ${trx.date} ${trx.time}
-                `;
-                let tbody = document.getElementById('print-tbody');
-                tbody.innerHTML = '';
-                trx.items.forEach(item => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${item.name}</td>
-                            <td>${item.qty}</td>
-                            <td>Rp ${item.sub.toLocaleString()}</td>
-                        </tr>
-                    `;
-                });
-                document.getElementById('print-total').innerText = `Rp ${trx.totalVal.toLocaleString()}`;
-                window.print();
+                const { error } = await supabaseClient.from('transactions').insert([newTrx]);
+                if(error) {
+                    alert("Gagal kirim transaksi ke cloud: " + error.message);
+                } else {
+                    alert("Transaksi Berhasil Disimpan ke Cloud!");
+                    page.show('dash');
+                }
             }
         };
 
         let adminMgr = {
-            loadAdminPanel: function() {
-                this.loadVerificationList();
-                this.loadTransactionAudit();
-                this.loadSPVMetrics();
-                this.loadSalesList();
-            },
-            loadSalesList: function() {
-                let salesList = JSON.parse(localStorage.getItem('np_sales_list') || '[]');
-                let container = document.getElementById('admin-sales-list');
-                container.innerHTML = '';
-                salesList.forEach((s, idx) => {
-                    container.innerHTML += `
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px 10px; border:1px solid var(--border); border-radius:6px; margin-bottom:4px; font-size:0.85rem;">
-                            <span><strong>${s}</strong></span>
-                            ${s !== 'A 01' ? `<button class="btn btn-danger btn-sm" style="padding:2px 6px; font-size:0.7rem;" onclick="adminMgr.deleteSales(${idx})">Hapus</button>` : '<span style="color:var(--text-light); font-size:0.7rem;">Default</span>'}
-                        </div>
-                    `;
-                });
-            },
-            registerSales: function() {
-                let salesId = document.getElementById('new-sales-id').value.trim();
-                if(!salesId) {
-                    alert("Masukkan ID Sales baru!");
-                    return;
+            syncData: async function() {
+                alert("Menarik data terbaru dari server Cloud...");
+                
+                let { data: logs } = await supabaseClient.from('transactions').select('*').eq('region', app.currentRegion);
+                let auditContainer = document.getElementById('admin-trx-audit-list');
+                auditContainer.innerHTML = '';
+                
+                let totalOmzet = 0;
+                if(logs && logs.length > 0) {
+                    logs.reverse().forEach(l => {
+                        totalOmzet += l.totalVal;
+                        auditContainer.innerHTML += `
+                            <div class="trx-audit-row">
+                                <strong>${l.outlet}</strong> (${l.outletType})<br>
+                                Sales: <strong>${l.sales}</strong> | Total: Rp ${l.totalVal.toLocaleString()} (${l.time})<br>
+                                <a href="https://www.google.com/maps?q=${l.gpsTrans}" target="_blank" style="color:var(--accent);">🗺️ Cek GPS (${l.gpsTrans})</a>
+                            </div>
+                        `;
+                    });
+                } else {
+                    auditContainer.innerHTML = '<p style="color:var(--text-light); text-align:center;">Belum ada data transaksi di Cloud.</p>';
                 }
-                let salesList = JSON.parse(localStorage.getItem('np_sales_list') || '[]');
-                if(salesList.some(s => s.toLowerCase() === salesId.toLowerCase())) {
-                    alert("ID Sales tersebut sudah terdaftar!");
-                    return;
-                }
-                salesList.push(salesId);
-                localStorage.setItem('np_sales_list', JSON.stringify(salesList));
-                document.getElementById('new-sales-id').value = '';
-                alert(`Sales ${salesId} berhasil didaftarkan!`);
-                this.loadSalesList();
-            },
-            deleteSales: function(index) {
-                let salesList = JSON.parse(localStorage.getItem('np_sales_list') || '[]');
-                let removed = salesList.splice(index, 1);
-                localStorage.setItem('np_sales_list', JSON.stringify(salesList));
-                alert(`Sales ${removed} dihapus dari sistem.`);
-                this.loadSalesList();
-            },
-            loadSPVMetrics: function() {
-                let keyTrx = `np_transactions_${app.currentRegion}`;
-                let keyOut = `np_outlets_${app.currentRegion}`;
-                let logs = JSON.parse(localStorage.getItem(keyTrx) || '[]');
-                let outlets = JSON.parse(localStorage.getItem(keyOut) || '[]');
-
-                let totalOmzet = logs.reduce((acc, curr) => acc + curr.totalVal, 0);
-                let activeOutlets = outlets.filter(o => o.status === 'VERIFIED').length;
-
                 document.getElementById('spv-total-omzet').innerText = `Rp ${totalOmzet.toLocaleString()}`;
-                document.getElementById('spv-active-outlets').innerText = `${activeOutlets} Toko`;
-            },
-            loadTransactionAudit: function() {
-                let keyTrx = `np_transactions_${app.currentRegion}`;
-                let logs = JSON.parse(localStorage.getItem(keyTrx) || '[]');
-                let container = document.getElementById('admin-trx-audit-list');
-                container.innerHTML = '';
 
-                if(logs.length === 0) {
-                    container.innerHTML = '<p style="font-size:0.85rem; color:var(--text-light); text-align:center; padding:10px;">Belum ada transaksi untuk diaudit.</p>';
-                    return;
+                let { data: outlets } = await supabaseClient.from('outlets').select('*').eq('region', app.currentRegion).eq('status', 'PENDING');
+                let verifyContainer = document.getElementById('admin-verification-list');
+                verifyContainer.innerHTML = '';
+                
+                if(outlets && outlets.length > 0) {
+                    outlets.forEach(o => {
+                        verifyContainer.innerHTML += `
+                            <div class="verification-row">
+                                <strong>${o.name}</strong> (Sales: ${o.sales})<br>
+                                Alamat: ${o.addr}<br>
+                                <button class="btn btn-success btn-sm" onclick="adminMgr.verifyOutlet('${o.id_toko}', 'VERIFIED')">✔ Verifikasi</button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    verifyContainer.innerHTML = '<p style="color:var(--text-light); text-align:center;">Tidak ada antrean toko baru.</p>';
                 }
-
-                logs.slice().reverse().forEach(l => {
-                    let badgeType = l.outletType === 'REGISTERED' ? 
-                        '<span class="badge badge-success">📂 REGISTERED OUTLET</span>' : 
-                        '<span class="badge badge-warning">⚡ NON-REGISTER (AD-HOC)</span>';
-
-                    let badgeGPS = l.outletType === 'REGISTERED' ? (l.statusMatch === 'MATCHED' ? 
-                        '<span class="badge badge-success">💚 GPS MATCHED</span>' : 
-                        `<span class="badge badge-danger">❤️ GPS MISSED (${l.distance}m)</span>`) : '';
-
-                    let mins = Math.floor((l.durationSec || 0) / 60);
-                    let secs = (l.durationSec || 0) % 60;
-                    let timeStr = `${mins}m ${secs}s`;
-
-                    let badgeDur = '<span class="badge badge-success">💚 IDEAL (5-15m)</span>';
-                    if(l.durationStatus === 'TOO_FAST') {
-                        badgeDur = `<span class="badge badge-danger">❤️ TERLALU CEPAT (${timeStr})</span>`;
-                    } else if(l.durationStatus === 'TOO_LONG') {
-                        badgeDur = `<span class="badge badge-danger">❤️ TERLALU LAMA (${timeStr})</span>`;
-                    }
-
-                    let mapsLink = `https://www.google.com/maps?q=${l.gpsTrans}`;
-
-                    container.innerHTML += `
-                        <div class="trx-audit-row">
-                            <div style="font-weight:600; margin-bottom:4px; font-size:0.9rem;">${l.outlet}</div>
-                            <div style="margin-bottom: 6px;">
-                                ${badgeType} ${badgeGPS} ${badgeDur}
-                            </div>
-                            <div style="color:var(--text-light); font-size:0.80rem;">
-                                Sales: <strong>${l.sales}</strong> | Total: Rp ${l.totalVal.toLocaleString()} (${l.time})
-                            </div>
-                            <div style="margin-top: 6px;">
-                                <a href="${mapsLink}" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:none;">🗺️ Cek Titik GPS Transaksi (${l.gpsTrans})</a>
-                            </div>
-                        </div>
-                    `;
-                });
             },
-            loadVerificationList: function() {
-                let key = `np_outlets_${app.currentRegion}`;
-                let outlets = JSON.parse(localStorage.getItem(key) || '[]');
-                let container = document.getElementById('admin-verification-list');
-                container.innerHTML = '';
-
-                let pendingItems = outlets.filter(o => o.status === 'PENDING');
-                if(pendingItems.length === 0) {
-                    container.innerHTML = '<p style="font-size:0.85rem; color:var(--text-light); text-align:center; padding:10px;">Tidak ada antrean toko baru.</p>';
-                    return;
+            verifyOutlet: async function(idToko, status) {
+                const { error } = await supabaseClient.from('outlets').update({ status }).eq('id_toko', idToko);
+                if(error) alert("Gagal update: " + error.message);
+                else {
+                    alert("Status toko diperbarui!");
+                    this.syncData();
                 }
-
-                pendingItems.forEach((o) => {
-                    let coords = o.gps.split(',');
-                    let lat = coords[0] ? coords[0].trim() : '0';
-                    let lng = coords[1] ? coords[1].trim() : '0';
-                    let mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
-
-                    container.innerHTML += `
-                        <div class="verification-row">
-                            <strong>${o.name}</strong><br>
-                            <span style="color:var(--text-light);">ID: ${o.id_toko} | Sales: ${o.sales}</span><br>
-                            <span style="color:var(--text-light);">Alamat: ${o.addr}</span><br>
-                            <div style="margin: 6px 0;">
-                                <a href="${mapsLink}" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:none;">🗺️ Cek Titik di Google Maps (${o.gps})</a>
-                            </div>
-                            <div class="verification-actions">
-                                <button class="btn btn-success btn-sm" onclick="adminMgr.updateStatus('${o.id_toko}', 'VERIFIED')">✔ Verified (Otoritas SPV)</button>
-                                <button class="btn btn-danger btn-sm" onclick="adminMgr.updateStatus('${o.id_toko}', 'DENIED')">✖ Deny</button>
-                            </div>
-                        </div>
-                    `;
-                });
-            },
-            updateStatus: function(idToko, newStatus) {
-                let key = `np_outlets_${app.currentRegion}`;
-                let outlets = JSON.parse(localStorage.getItem(key) || '[]');
-                outlets = outlets.map(o => {
-                    if(o.id_toko === idToko) o.status = newStatus;
-                    return o;
-                });
-                localStorage.setItem(key, JSON.stringify(outlets));
-                alert(`Status toko berhasil diubah menjadi: ${newStatus}`);
-                this.loadAdminPanel();
-            },
-            injectProducts: function(event) {
-                let file = event.target.files[0];
-                if(!file) return;
-                let reader = new FileReader();
-                reader.onload = function(e) {
-                    let lines = e.target.result.split('\n');
-                    let newProds = [];
-                    for(let i = 1; i < lines.length; i++) {
-                        let line = lines[i].trim();
-                        if(!line) continue;
-                        let cols = line.split(',');
-                        if(cols.length >= 3) {
-                            newProds.push({
-                                name: cols[0].replace(/"/g, '').trim(),
-                                price: parseFloat(cols[1]) || 0,
-                                stock: parseInt(cols[2]) || 0
-                            });
-                        }
-                    }
-                    if(newProds.length > 0) {
-                        localStorage.setItem('np_products', JSON.stringify(newProds));
-                        alert(`Sukses inject ${newProds.length} produk pagi ke sistem!`);
-                    } else {
-                        alert("Format CSV produk tidak valid.");
-                    }
-                };
-                reader.readAsText(file);
-            },
-            injectOutlets: function(event) {
-                let file = event.target.files[0];
-                if(!file) return;
-                let reader = new FileReader();
-                reader.onload = function(e) {
-                    let lines = e.target.result.split('\n');
-                    let key = `np_outlets_${app.currentRegion}`;
-                    let outlets = JSON.parse(localStorage.getItem(key) || '[]');
-                    let count = 0;
-
-                    for(let i = 1; i < lines.length; i++) {
-                        let line = lines[i].trim();
-                        if(!line) continue;
-                        let cols = line.split(',');
-                        if(cols.length >= 5) {
-                            outlets.push({
-                                id_toko: `TKG-INJ-${Date.now().toString().slice(-4)}${count}`,
-                                name: cols[0].replace(/"/g, '').trim(),
-                                phone: cols[1].replace(/"/g, '').trim() || '-',
-                                addr: cols[2].replace(/"/g, '').trim() || '-',
-                                gps: `${cols[3].replace(/"/g, '').trim()}, ${cols[4].replace(/"/g, '').trim()}`,
-                                sales: 'INJECT-ADMIN',
-                                status: 'VERIFIED'
-                            });
-                            count++;
-                        }
-                    }
-                    if(count > 0) {
-                        localStorage.setItem(key, JSON.stringify(outlets));
-                        alert(`Sukses inject ${count} data toko resmi ke area ${app.currentRegion}!`);
-                        adminMgr.loadAdminPanel();
-                    } else {
-                        alert("Format CSV toko tidak valid.");
-                    }
-                };
-                reader.readAsText(file);
-            },
-            exportToCSV: function() {
-                let keyOut = `np_outlets_${app.currentRegion}`;
-                let outlets = JSON.parse(localStorage.getItem(keyOut) || '[]');
-                let verifiedOutlets = outlets.filter(o => o.status === 'VERIFIED');
-                if(verifiedOutlets.length === 0) {
-                    alert("Belum ada data toko terverifikasi untuk diexport!");
-                    return;
-                }
-
-                let csvContent = "ID_Toko,Nama_Toko,No_HP,Alamat,Latitude,Longitude,Sales,Status\r\n";
-                verifiedOutlets.forEach(o => {
-                    let coords = o.gps.split(',');
-                    let lat = coords[0] ? coords[0].trim() : '0';
-                    let lng = coords[1] ? coords[1].trim() : '0';
-                    let row = [`"${o.id_toko}"`, `"${o.name}"`, `"${o.phone}"`, `"${o.addr.replace(/[\r\n]+/g, ' ')}"`, `"${lat}"`, `"${lng}"`, `"${o.sales}"`, `"${o.status}"`];
-                    csvContent += row.join(",") + "\r\n";
-                });
-
-                let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                let url = URL.createObjectURL(blob);
-                let a = document.createElement('a'); a.href = url; a.download = `Google-Maps-Outlet-${app.currentRegion}.csv`; a.click();
             }
         };
 
         let logMgr = {
-            loadLog: function() {
-                document.getElementById('log-sales-info').innerText = `Sales: ${app.currentUser} | Area: ${app.currentRegion}`;
-                let logKey = `np_transactions_${app.currentRegion}`;
-                let logs = JSON.parse(localStorage.getItem(logKey) || '[]');
+            loadLog: async function() {
+                let { data: logs } = await supabaseClient.from('transactions').select('*').eq('region', app.currentRegion).eq('sales', app.currentUser);
                 let container = document.getElementById('log-container');
                 container.innerHTML = '';
-                document.getElementById('kpi-ec-val').innerText = logs.length;
-                document.getElementById('kpi-vol-val').innerText = logs.reduce((a, c) => a + c.totalVol, 0);
-
-                if(logs.length === 0) { 
-                    container.innerHTML = '<p style="text-align:center; color:var(--text-light); padding:20px;">Belum ada transaksi di area ini.</p>'; 
-                    return; 
-                }
-                logs.slice().reverse().forEach(l => {
-                    let badgeType = l.outletType === 'REGISTERED' ? '📂 Reg' : '⚡ Non-Reg';
-                    container.innerHTML += `
-                        <div class="log-item">
-                            <div class="log-header">
-                                <span>${l.date} - ${l.time}</span>
-                                <span style="color:var(--success);">${badgeType}</span>
-                            </div>
-                            <div class="log-outlet">${l.outlet} (${l.sales})</div>
-                            <div>Total Penjualan: Rp ${l.totalVal.toLocaleString()} (${l.totalVol} Item)</div>
-                        </div>`;
-                });
-            }
-        };
-
-        let dataMgr = {
-            exportJSON: function() {
-                let keyOut = `np_outlets_${app.currentRegion}`;
-                let keyTrx = `np_transactions_${app.currentRegion}`;
-                let data = { region: app.currentRegion, outlets: localStorage.getItem(keyOut), transactions: localStorage.getItem(keyTrx) };
-                let blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-                let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup-nu-esp-${app.currentRegion}.json`; a.click();
-            },
-            shareWA: function() {
-                let logKey = `np_transactions_${app.currentRegion}`;
-                let logs = JSON.parse(localStorage.getItem(logKey) || '[]');
-                let text = `*REKAP HARIAN & OPNAME (${app.currentRegion}): ${app.currentUser}*%0A`;
-                logs.forEach((l, i) => {
-                    let typeSign = l.outletType === 'REGISTERED' ? '[Reg]' : '[Non-Reg]';
-                    text += `${i+1}. ${l.outlet} ${typeSign} - Rp ${l.totalVal.toLocaleString()}%0A`;
-                });
-                window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-            },
-            resetShift: function() {
-                if(confirm(`Yakin ingin mereset seluruh transaksi ${app.currentRegion} hari ini?`)) { 
-                    localStorage.removeItem(`np_transactions_${app.currentRegion}`); 
-                    alert("Shift area ini berhasil di-reset bersih!"); 
-                    page.show('dash'); 
+                if(logs && logs.length > 0) {
+                    logs.reverse().forEach(l => {
+                        container.innerHTML += `<div class="trx-audit-row"><strong>${l.outlet}</strong><br>Rp ${l.totalVal.toLocaleString()} (${l.time})</div>`;
+                    });
+                } else {
+                    container.innerHTML = '<p style="text-align:center; color:var(--text-light);">Belum ada transaksi hari ini.</p>';
                 }
             }
         };
-
-        window.onload = () => app.init();
     </script>
 </body>
 </html>

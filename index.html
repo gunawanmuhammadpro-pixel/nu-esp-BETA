@@ -3,477 +3,510 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nu ESP Beta - Cloud Sync System</title>
-    <!-- SDK Supabase dari CDN -->
+    <title>Nu ESP Sales Operational System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root {
-            --primary: #0F172A;
-            --accent: #2563EB;
-            --success: #16A34A;
-            --warning: #CA8A04;
-            --danger: #DC2626;
-            --bg: #F8FAFC;
-            --card: #FFFFFF;
-            --text: #334155;
-            --text-light: #64748B;
-            --border: #E2E8F0;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 40px; }
-        
-        header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        header h1 { font-size: 1.1rem; font-weight: 600; }
-        header button { background: var(--danger); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
-
-        .banner { background: #E0E7FF; color: #3730A3; padding: 8px 20px; font-size: 0.8rem; font-weight: 500; display: flex; justify-content: space-between; }
-        .container { max-width: 480px; margin: 20px auto; padding: 0 15px; }
-        .page { display: none; }
-        .page.active { display: block; }
-
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .card h2 { font-size: 1rem; margin-bottom: 15px; color: var(--primary); border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
-
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 5px; color: var(--text-light); }
-        .form-control { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; }
-        .form-control:focus { border-color: var(--accent); }
-
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; text-align: center; margin-top: 6px;}
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-success { background: var(--success); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-secondary { background: #E2E8F0; color: var(--text); }
-        .btn-sm { padding: 6px 10px; font-size: 0.8rem; width: auto; }
-
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-        .menu-btn { background: var(--card); border: 1px solid var(--border); padding: 20px 15px; border-radius: 12px; text-align: center; cursor: pointer; font-weight: 600; color: var(--primary); transition: 0.2s; }
-        .menu-btn:active { background: #F1F5F9; transform: scale(0.98); }
-
-        .product-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
-        .product-info { flex-grow: 1; }
-        .product-name { font-size: 0.9rem; font-weight: 500; }
-        .product-price { font-size: 0.8rem; color: var(--text-light); }
-        
-        .qty-control { display: flex; align-items: center; gap: 10px; }
-        .qty-btn { width: 30px; height: 30px; border: 1px solid var(--border); background: white; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .display-qty { font-weight: 600; min-width: 20px; text-align: center; }
-
-        .trx-audit-row, .verification-row { background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.85rem; }
-        .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; display: inline-block; margin-bottom: 2px; }
-        .badge-success { background: #DCFCE7; color: var(--success); }
-        .badge-danger { background: #FEE2E2; color: var(--danger); }
-        .badge-warning { background: #FEF3C7; color: var(--warning); }
-
-        .hidden { display: none !important; }
-    </style>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
-    <header id="app-header" class="hidden">
-        <h1 id="header-sales-name">Nu ESP Beta</h1>
-        <button onclick="app.logout()">Keluar</button>
-    </header>
-    <div id="status-banner" class="banner hidden">
-        <span id="shift-date">Sabtu, 25 Juli 2026</span>
-        <span id="shift-status">● Area Kerja: AREA-A</span>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-emerald-600 to-teal-800">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+            <div class="text-center mb-8">
+                <div class="bg-emerald-100 text-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                    <i class="fa-solid fa-leaf"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900">Nu ESP Mobile</h1>
+                <p class="text-sm text-slate-500">Sistem Operasional Lapangan & SPV</p>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">ID Karyawan / Role</label>
+                    <input type="text" id="loginId" required placeholder="Contoh: A 01 atau ADMIN" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none uppercase font-semibold">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">PIN Akses</label>
+                    <input type="password" id="loginPin" required placeholder="Masukkan PIN" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg transition duration-200 shadow-md">
+                    Masuk Aplikasi
+                </button>
+            </form>
+            <div class="mt-6 text-center text-xs text-slate-400">
+                Akses Demo: Sales (<span class="font-mono font-bold">A 01</span> / <span class="font-mono font-bold">1234</span>) | SPV/Admin (<span class="font-mono font-bold">ADMIN</span> / <span class="font-mono font-bold">1234</span>)
+            </div>
+        </div>
     </div>
 
-    <div class="container">
-
-        <!-- 1. HALAMAN LOGIN -->
-        <div id="login-page" class="page active">
-            <div class="card" style="margin-top: 40px;">
-                <h2>Masuk Sistem Lapangan</h2>
-                <div class="form-group">
-                    <label>ID Karyawan (Contoh: A 01, ADMIN, SPV)</label>
-                    <input type="text" id="login-id" class="form-control" value="A 01" placeholder="Contoh: A 01">
-                </div>
-                <div class="form-group">
-                    <label>PIN Akses (4 Digit)</label>
-                    <input type="password" id="login-pin" class="form-control" maxlength="4" placeholder="••••">
-                </div>
-                <button class="btn btn-primary" onclick="app.login()">Masuk Aplikasi</button>
-            </div>
-        </div>
-
-        <!-- 2. DASHBOARD UTAMA -->
-        <div id="dashboard-page" class="page">
-            <div class="card">
-                <h2>Menu Utama Lapangan</h2>
-                <div class="menu-grid">
-                    <div class="menu-btn" onclick="page.show('reg')">📍 Registrasi Toko Baru</div>
-                    <div class="menu-btn" onclick="page.show('exch')">🛒 Catat Transaksi</div>
-                    <div class="menu-btn" onclick="page.show('log')">📊 Daily Log & Rekap</div>
-                    <div class="menu-btn" onclick="app.logout()">🔄 Ganti Akun</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. REGISTRASI TOKO -->
-        <div id="reg-page" class="page">
-            <div class="card">
-                <h2>Registrasi Outlet Resmi</h2>
-                <div class="form-group">
-                    <label>Nama Toko / Warung</label>
-                    <input type="text" id="out-name" class="form-control" placeholder="Contoh: Warung Barokah">
-                </div>
-                <div class="form-group">
-                    <label>No HP Pemilik (Opsional)</label>
-                    <input type="tel" id="out-phone" class="form-control" placeholder="08xxxxxxxxxx">
-                </div>
-                <div class="form-group">
-                    <label>Alamat Singkat</label>
-                    <textarea id="out-address" class="form-control" rows="2" placeholder="Jl. Raya No..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Titik GPS (Latitude, Longitude)</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="out-gps" class="form-control" placeholder="Tekan Ambil GPS" readonly>
-                        <button class="btn btn-secondary" style="width: 120px; margin-top: 0;" onclick="geo.getLocation('out-gps')">Ambil GPS</button>
+    <!-- MAIN APP WRAPPER -->
+    <div id="appContainer" class="hidden min-h-screen flex flex-col">
+        <!-- Top Navigation -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-emerald-600 text-white p-2 rounded-lg">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h2 id="appTitle" class="font-bold text-slate-800 text-lg">Nu ESP Beta</h2>
+                        <p id="userRoleBadge" class="text-xs text-emerald-600 font-medium">Sales Mode</p>
                     </div>
                 </div>
-                <button class="btn btn-success" onclick="outletMgr.register()">Submit Toko (Kirim ke Cloud)</button>
-                <button class="btn btn-secondary" onclick="page.show('dash')">Kembali</button>
+                <button onclick="logout()" class="text-slate-500 hover:text-red-600 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium transition">
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i> Keluar
+                </button>
             </div>
-        </div>
+        </header>
 
-        <!-- 4. TRANSAKSI -->
-        <div id="exch-page" class="page">
-            <div class="card">
-                <h2>Input Transaksi Penjualan</h2>
-                <div class="form-group">
-                    <label>Pilih Jenis Transaksi Outlet</label>
-                    <select id="exch-mode-select" class="form-control" onchange="exchMgr.toggleOutletMode()">
-                        <option value="REGISTERED">Toko Terverifikasi (Master)</option>
-                        <option value="NON_REGISTERED">Toko Non-Register / Temuan Baru (Ad-hoc)</option>
-                    </select>
-                </div>
-                <div class="form-group" id="group-reg-outlet">
-                    <label>Pilih Toko Terdaftar</label>
-                    <select id="exch-outlet-select" class="form-control"></select>
-                </div>
-                <div class="form-group hidden" id="group-non-reg-outlet">
-                    <label>Nama Toko Temuan Baru</label>
-                    <input type="text" id="exch-non-reg-name" class="form-control" placeholder="Nama Toko">
-                </div>
-                <div class="form-group">
-                    <label>GPS Transaksi (Auto Capture)</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="exch-gps" class="form-control" readonly>
-                        <button class="btn btn-secondary" style="width: 120px; margin-top: 0;" onclick="geo.getLocation('exch-gps')">Update GPS</button>
-                    </div>
-                </div>
-                <div style="margin: 15px 0 5px 0; font-weight: 600; font-size: 0.9rem;">Katalog Produk</div>
-                <div id="product-list" style="margin-bottom: 15px;"></div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 1.1rem;">
-                    <span>Total Tagihan:</span>
-                    <span id="cart-total" style="color: var(--accent);">Rp 0</span>
-                </div>
-                <button class="btn btn-success" onclick="exchMgr.submit()">Submit & Simpan ke Cloud</button>
-                <button class="btn btn-secondary" onclick="page.show('dash')">Kembali</button>
-            </div>
-        </div>
-
-        <!-- 5. DAILY LOG -->
-        <div id="log-page" class="page">
-            <div class="card">
-                <h2>Daily Log & Rekap Shift</h2>
-                <div id="log-container" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
-                <button class="btn btn-secondary" onclick="page.show('dash')">Kembali</button>
-            </div>
-        </div>
-
-        <!-- 6. PANEL ADMIN & SPV -->
-        <div id="admin-page" class="page">
-            <div class="card">
-                <h2>Panel SPV & Admin Gudang</h2>
-                
-                <!-- TOMBOL SINKRONISASI OTOMATIS -->
-                <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
-                    <h3 style="font-size: 0.95rem; color: #1E40AF; margin-bottom: 8px;">☁️ Sinkronisasi Cloud Server</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 10px;">Tarik data transaksi & toko terbaru dari HP sales secara real-time.</p>
-                    <button class="btn btn-primary" onclick="adminMgr.syncData()">🔄 Sinkronisasi Data Sekarang</button>
+        <!-- Dynamic Content Body -->
+        <main class="flex-1 max-w-4xl w-full mx-auto p-4 pb-20">
+            
+            <!-- SALES INTERFACE -->
+            <div id="salesView" class="space-y-6">
+                <!-- Tab Menu Sales -->
+                <div class="flex rounded-xl bg-slate-200 p-1">
+                    <button onclick="switchSalesTab('reg')" id="tabReg" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-white text-emerald-700 shadow-sm transition">Registrasi Toko</button>
+                    <button onclick="switchSalesTab('trans')" id="tabTrans" class="flex-1 py-2 text-sm font-semibold rounded-lg text-slate-600 transition">Catat Transaksi</button>
                 </div>
 
-                <div style="margin-bottom: 15px;">
-                    <strong>Total Omzet Area:</strong> <span id="spv-total-omzet" style="color: var(--accent);">Rp 0</span>
-                </div>
-
-                <h3 style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 10px;">Audit Transaksi Masuk</h3>
-                <div id="admin-trx-audit-list" style="margin-bottom: 15px;"></div>
-
-                <h3 style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 10px;">Antrean Verifikasi Toko Baru</h3>
-                <div id="admin-verification-list" style="margin-bottom: 15px;"></div>
-
-                <button class="btn btn-secondary" onclick="page.show('dash')">Keluar Panel SPV</button>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        // ==========================================
-        // KONFIGURASI SUPABASE (Sudah diisi otomatis)
-        // ==========================================
-        const SUPABASE_URL = 'https://ucddlrtktokvnntedvai.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_1b82XK-h3x8rhTMn97E9EA_QLsfdZqa'; // Ganti pakai full Publishable key lu yang panjang dari Supabase
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        let defaultProducts = [
-            { name: "Nupuca Kopi Original (1 Dus)", price: 150000, stock: 100 },
-            { name: "Nupuca Kopi Jahe (1 Renceng)", price: 50000, stock: 150 }
-        ];
-
-        let app = {
-            currentUser: null,
-            currentRegion: 'AREA-A',
-            login: function() {
-                let id = document.getElementById('login-id').value.trim().toUpperCase();
-                let pin = document.getElementById('login-pin').value.trim();
-
-                if(!id || pin.length !== 4) {
-                    alert("Masukkan ID dan PIN 4-Digit!");
-                    return;
-                }
-
-                this.currentUser = id;
-                document.getElementById('header-sales-name').innerText = `${id} (${this.currentRegion})`;
-                document.getElementById('app-header').classList.remove('hidden');
-                document.getElementById('status-banner').classList.remove('hidden');
-
-                if(id === 'ADMIN' || id === 'SPV') {
-                    page.show('admin');
-                } else {
-                    page.show('dash');
-                }
-            },
-            logout: function() {
-                this.currentUser = null;
-                document.getElementById('app-header').classList.add('hidden');
-                document.getElementById('status-banner').classList.add('hidden');
-                page.show('login');
-            }
-        };
-
-        let page = {
-            show: function(id) {
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                if(id === 'dash') document.getElementById('dashboard-page').classList.add('active');
-                else if(id === 'reg') document.getElementById('reg-page').classList.add('active');
-                else if(id === 'exch') { document.getElementById('exch-page').classList.add('active'); exchMgr.loadForm(); }
-                else if(id === 'log') { document.getElementById('log-page').classList.add('active'); logMgr.loadLog(); }
-                else if(id === 'admin') { document.getElementById('admin-page').classList.add('active'); adminMgr.syncData(); }
-                else document.getElementById('login-page').classList.add('active');
-            }
-        };
-
-        let geo = {
-            getLocation: function(elementId) {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(pos => {
-                        document.getElementById(elementId).value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
-                    }, (err) => {
-                        let manual = prompt("GPS otomatis gagal/non-aktif. Masukkan koordinat manual (Lat, Lng):", "-6.200000, 106.816666");
-                        if(manual) document.getElementById(elementId).value = manual;
-                    }, { timeout: 10000, enableHighAccuracy: true });
-                } else {
-                    alert("GPS tidak didukung browser ini.");
-                }
-            }
-        };
-
-        let outletMgr = {
-            register: async function() {
-                let name = document.getElementById('out-name').value.trim();
-                let gps = document.getElementById('out-gps').value.trim();
-                if(!name || !gps) { alert("Nama toko dan GPS wajib diisi!"); return; }
-
-                let newOutlet = {
-                    id_toko: `TKG-${Date.now().toString().slice(-6)}`,
-                    name,
-                    phone: document.getElementById('out-phone').value || '-',
-                    addr: document.getElementById('out-address').value || '-',
-                    gps,
-                    sales: app.currentUser,
-                    region: app.currentRegion,
-                    status: 'PENDING'
-                };
-
-                const { error } = await supabaseClient.from('outlets').insert([newOutlet]);
-                if(error) {
-                    alert("Gagal kirim ke cloud: " + error.message);
-                } else {
-                    alert("Registrasi toko berhasil dikirim ke Cloud SPV!");
-                    page.show('dash');
-                }
-            }
-        };
-
-        let exchMgr = {
-            qtys: {},
-            loadForm: async function() {
-                document.getElementById('exch-mode-select').value = 'REGISTERED';
-                this.toggleOutletMode();
-                geo.getLocation('exch-gps');
-
-                let { data: outlets } = await supabaseClient.from('outlets').select('*').eq('region', app.currentRegion).eq('status', 'VERIFIED');
-                let select = document.getElementById('exch-outlet-select');
-                select.innerHTML = `<option value="">-- Pilih Toko Terverifikasi --</option>`;
-                if(outlets) {
-                    outlets.forEach(o => {
-                        select.innerHTML += `<option value="${o.name}">${o.name} (${o.id_toko})</option>`;
-                    });
-                }
-
-                let pList = document.getElementById('product-list');
-                pList.innerHTML = '';
-                this.qtys = {};
-                defaultProducts.forEach((p, index) => {
-                    pList.innerHTML += `
-                        <div class="product-card">
-                            <div class="product-info">
-                                <div class="product-name">${p.name}</div>
-                                <div class="product-price">Rp ${p.price.toLocaleString()}</div>
+                <!-- Form Registrasi Toko -->
+                <div id="sectionReg" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <h3 class="font-bold text-lg text-slate-800 border-b pb-2"><i class="fa-solid fa-store text-emerald-600 mr-2"></i> Form Registrasi Toko Baru</h3>
+                    <form onsubmit="submitOutlet(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Nama Toko</label>
+                                <input type="text" id="regName" required placeholder="cth: Warung Berkah" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
                             </div>
-                            <div class="qty-control">
-                                <button class="qty-btn" onclick="exchMgr.adjust(${index}, -1)">-</button>
-                                <span class="display-qty" id="qty-${index}">0</span>
-                                <button class="qty-btn" onclick="exchMgr.adjust(${index}, 1)">+</button>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">No. HP Pemilik</label>
+                                <input type="text" id="regPhone" required placeholder="cth: 08123456789" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
                             </div>
                         </div>
-                    `;
-                });
-                document.getElementById('cart-total').innerText = 'Rp 0';
-            },
-            toggleOutletMode: function() {
-                let mode = document.getElementById('exch-mode-select').value;
-                if(mode === 'REGISTERED') {
-                    document.getElementById('group-reg-outlet').classList.remove('hidden');
-                    document.getElementById('group-non-reg-outlet').classList.add('hidden');
-                } else {
-                    document.getElementById('group-reg-outlet').classList.add('hidden');
-                    document.getElementById('group-non-reg-outlet').classList.remove('hidden');
-                }
-            },
-            adjust: function(index, delta) {
-                if(!this.qtys[index]) this.qtys[index] = 0;
-                this.qtys[index] += delta;
-                if(this.qtys[index] < 0) this.qtys[index] = 0;
-                document.getElementById(`qty-${index}`).innerText = this.qtys[index];
-                
-                let total = 0;
-                for(let idx in this.qtys) total += (this.qtys[idx] * defaultProducts[idx].price);
-                document.getElementById('cart-total').innerText = 'Rp ' + total.toLocaleString();
-            },
-            submit: async function() {
-                let mode = document.getElementById('exch-mode-select').value;
-                let outlet = mode === 'REGISTERED' ? document.getElementById('exch-outlet-select').value : document.getElementById('exch-non-reg-name').value.trim();
-                let transGps = document.getElementById('exch-gps').value.trim();
-                
-                if(!outlet || !transGps) { alert("Pilih toko dan pastikan GPS aktif!"); return; }
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Alamat Toko</label>
+                            <input type="text" id="regAddr" required placeholder="cth: Jl. Merdeka No. 10" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Wilayah / Region</label>
+                                <select id="regRegion" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="AREA-A">AREA-A (Pusat)</option>
+                                    <option value="AREA-B">AREA-B (Timur)</option>
+                                    <option value="AREA-C">AREA-C (Barat)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Koordinat GPS</label>
+                                <div class="flex space-x-2">
+                                    <input type="text" id="regGps" readonly placeholder="Klik Ambil GPS" class="w-full px-3 py-2 border rounded-lg bg-slate-50 text-sm">
+                                    <button type="button" onclick="getGps('regGps')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-700"><i class="fa-solid fa-location-crosshairs"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg transition shadow-md">
+                            Simpan & Kirim Toko Baru
+                        </button>
+                    </form>
+                </div>
 
-                let items = [], totalVal = 0, totalVol = 0;
-                for(let idx in this.qtys) {
-                    if(this.qtys[idx] > 0) {
-                        let p = defaultProducts[idx];
-                        let sub = this.qtys[idx] * p.price;
-                        items.push({ name: p.name, qty: this.qtys[idx], sub });
-                        totalVal += sub; totalVol += this.qtys[idx];
+                <!-- Form Transaksi Penjualan -->
+                <div id="sectionTrans" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <h3 class="font-bold text-lg text-slate-800 border-b pb-2"><i class="fa-solid fa-cash-register text-emerald-600 mr-2"></i> Input Transaksi Penjualan</h3>
+                    <form onsubmit="submitTransaction(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Nama Toko Tujuan</label>
+                                <input type="text" id="transOutlet" required placeholder="cth: Warung Berkah" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Tipe Outlet</label>
+                                <select id="transOutletType" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="Grosir">Grosir</option>
+                                    <option value="Kelontong">Kelontong</option>
+                                    <option value="Retail Modern">Retail Modern</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Region</label>
+                                <select id="transRegion" class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="AREA-A">AREA-A (Pusat)</option>
+                                    <option value="AREA-B">AREA-B (Timur)</option>
+                                    <option value="AREA-C">AREA-C (Barat)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">GPS Transaksi</label>
+                                <div class="flex space-x-2">
+                                    <input type="text" id="transGps" readonly placeholder="Klik Ambil GPS" class="w-full px-3 py-2 border rounded-lg bg-slate-50 text-sm">
+                                    <button type="button" onclick="getGps('transGps')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-700"><i class="fa-solid fa-location-crosshairs"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Produk Keranjang -->
+                        <div class="border-t pt-3">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Item Produk Terjual</label>
+                            <div class="grid grid-cols-3 gap-2 mb-2">
+                                <input type="text" id="prodName" placeholder="Nama Produk" class="col-span-1 px-3 py-2 border rounded-lg text-sm">
+                                <input type="number" id="prodQty" placeholder="Jumlah" class="col-span-1 px-3 py-2 border rounded-lg text-sm">
+                                <input type="number" id="prodPrice" placeholder="Total Harga (Rp)" class="col-span-1 px-3 py-2 border rounded-lg text-sm">
+                            </div>
+                            <button type="button" onclick="addItemToCart()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-lg text-sm w-full transition">+ Tambah ke Keranjang</button>
+                            
+                            <!-- List Cart Preview -->
+                            <div id="cartList" class="mt-3 space-y-1 text-sm bg-slate-50 p-3 rounded-lg border max-h-32 overflow-y-auto">
+                                <span class="text-slate-400 italic">Belum ada item produk dalam transaksi.</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-lg transition shadow-md">
+                            Kirim Data Transaksi
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- SPV / ADMIN INTERFACE -->
+            <div id="adminView" class="hidden space-y-6">
+                <!-- Dashboard Control Panel -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-xl text-slate-800">Dashboard Supervisor</h3>
+                        <p class="text-sm text-slate-500">Monitoring real-time outlet & transaksi lapangan</p>
+                    </div>
+                    <div class="flex space-x-2 w-full md:w-auto">
+                        <button onclick="injectDummyData()" class="flex-1 md:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm">
+                            <i class="fa-solid fa-database mr-1"></i> Inject Data Dummy
+                        </button>
+                        <button onclick="loadAdminData()" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm">
+                            <i class="fa-solid fa-rotate mr-1"></i> Refresh Data
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Statistik Ringkasan -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-400 uppercase">Total Outlet Terdaftar</p>
+                        <h4 id="statOutlets" class="text-2xl font-bold text-slate-800 mt-1">0 Toko</h4>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-400 uppercase">Total Transaksi Masuk</p>
+                        <h4 id="statTransactions" class="text-2xl font-bold text-slate-800 mt-1">0 Transaksi</h4>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-400 uppercase">Total Omzet Penjualan</p>
+                        <h4 id="statOmzet" class="text-2xl font-bold text-emerald-600 mt-1">Rp 0</h4>
+                    </div>
+                </div>
+
+                <!-- Tabel Data Outlet -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b bg-slate-50">
+                        <h4 class="font-bold text-slate-800"><i class="fa-solid fa-store mr-2 text-emerald-600"></i> Database Outlets Lapangan</h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b">
+                                    <th class="p-3">ID Toko</th>
+                                    <th class="p-3">Nama Toko</th>
+                                    <th class="p-3">Alamat</th>
+                                    <th class="p-3">Region</th>
+                                    <th class="p-3">Sales</th>
+                                    <th class="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableOutletsBody">
+                                <tr><td colspan="6" class="p-4 text-center text-slate-400">Memuat data outlet...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabel Data Transaksi -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b bg-slate-50">
+                        <h4 class="font-bold text-slate-800"><i class="fa-solid fa-receipt mr-2 text-teal-600"></i> Rekapitulasi Transaksi</h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b">
+                                    <th class="p-3">Waktu</th>
+                                    <th class="p-3">Sales</th>
+                                    <th class="p-3">Outlet</th>
+                                    <th class="p-3">Tipe</th>
+                                    <th class="p-3">Total Nilai</th>
+                                    <th class="p-3">Detail Items</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableTransBody">
+                                <tr><td colspan="6" class="p-4 text-center text-slate-400">Memuat data transaksi...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- CORE SYSTEM SCRIPT -->
+    <script>
+        // KONFIGURASI SUPABASE (Ganti dengan URL & Anon Key Supabase lu jika perlu)
+        const SUPABASE_URL = 'https://ucddlrtktokvnntdvai.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZGRscnRrdG9rdm5udGR2YWkiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NDE3NjgyMywiZXhwIjoyMDg5NzUyODIzfQ.4wG9LgK-qN0yL0gL0gL0gL0gL0gL0gL0gL0gL0gL0gI'; // Default aktif lu
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let currentCart = [];
+
+        // Handle Login
+        function handleLogin(e) {
+            e.preventDefault();
+            const id = document.getElementById('loginId').value.trim().toUpperCase();
+            const pin = document.getElementById('loginPin').value.trim();
+
+            if (pin !== '1234') {
+                alert('PIN Akses Salah! Gunakan PIN: 1234');
+                return;
+            }
+
+            currentUser = id;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+
+            if (id === 'ADMIN' || id === 'SPV') {
+                document.getElementById('appTitle').innerText = 'Dashboard SPV / Admin';
+                document.getElementById('userRoleBadge').innerText = 'Supervisor Mode';
+                document.getElementById('salesView').classList.add('hidden');
+                document.getElementById('adminView').classList.remove('hidden');
+                loadAdminData();
+            } else {
+                document.getElementById('appTitle').innerText = `Sales: ${id}`;
+                document.getElementById('userRoleBadge').innerText = 'Sales Lapangan';
+                document.getElementById('adminView').classList.add('hidden');
+                document.getElementById('salesView').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            currentCart = [];
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        // Tab Switcher Sales
+        function switchSalesTab(tab) {
+            if (tab === 'reg') {
+                document.getElementById('sectionReg').classList.remove('hidden');
+                document.getElementById('sectionTrans').classList.add('hidden');
+                document.getElementById('tabReg').className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-white text-emerald-700 shadow-sm transition';
+                document.getElementById('tabTrans').className = 'flex-1 py-2 text-sm font-semibold rounded-lg text-slate-600 transition';
+            } else {
+                document.getElementById('sectionReg').classList.add('hidden');
+                document.getElementById('sectionTrans').classList.remove('hidden');
+                document.getElementById('tabTrans').className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-white text-teal-700 shadow-sm transition';
+                document.getElementById('tabReg').className = 'flex-1 py-2 text-sm font-semibold rounded-lg text-slate-600 transition';
+            }
+        }
+
+        // GPS Getter Utility
+        function getGps(targetId) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                        document.getElementById(targetId).value = coords;
+                    },
+                    (error) => {
+                        alert('Gagal mengambil GPS. Pastikan izin lokasi aktif.');
+                        document.getElementById(targetId).value = '-6.200000, 106.816666'; // Default fallback Jakarta
                     }
-                }
-                if(totalVal === 0) { alert("Keranjang kosong!"); return; }
-
-                let newTrx = {
-                    time: new Date().toLocaleTimeString(),
-                    date: new Date().toLocaleDateString(),
-                    sales: app.currentUser,
-                    region: app.currentRegion,
-                    outlet,
-                    outletType: mode,
-                    items,
-                    totalVal,
-                    totalVol,
-                    gpsTrans: transGps
-                };
-
-                const { error } = await supabaseClient.from('transactions').insert([newTrx]);
-                if(error) {
-                    alert("Gagal kirim transaksi ke cloud: " + error.message);
-                } else {
-                    alert("Transaksi Berhasil Disimpan ke Cloud!");
-                    page.show('dash');
-                }
+                );
+            } else {
+                alert('Geolocation tidak didukung browser ini.');
             }
-        };
+        }
 
-        let adminMgr = {
-            syncData: async function() {
-                alert("Menarik data terbaru dari server Cloud...");
-                
-                let { data: logs } = await supabaseClient.from('transactions').select('*').eq('region', app.currentRegion);
-                let auditContainer = document.getElementById('admin-trx-audit-list');
-                auditContainer.innerHTML = '';
-                
-                let totalOmzet = 0;
-                if(logs && logs.length > 0) {
-                    logs.reverse().forEach(l => {
-                        totalOmzet += l.totalVal;
-                        auditContainer.innerHTML += `
-                            <div class="trx-audit-row">
-                                <strong>${l.outlet}</strong> (${l.outletType})<br>
-                                Sales: <strong>${l.sales}</strong> | Total: Rp ${l.totalVal.toLocaleString()} (${l.time})<br>
-                                <a href="https://www.google.com/maps?q=${l.gpsTrans}" target="_blank" style="color:var(--accent);">🗺️ Cek GPS (${l.gpsTrans})</a>
-                            </div>
-                        `;
-                    });
-                } else {
-                    auditContainer.innerHTML = '<p style="color:var(--text-light); text-align:center;">Belum ada data transaksi di Cloud.</p>';
-                }
-                document.getElementById('spv-total-omzet').innerText = `Rp ${totalOmzet.toLocaleString()}`;
+        // Cart Management
+        function addItemToCart() {
+            const name = document.getElementById('prodName').value.trim();
+            const qty = parseInt(document.getElementById('prodQty').value);
+            const price = parseInt(document.getElementById('prodPrice').value);
 
-                let { data: outlets } = await supabaseClient.from('outlets').select('*').eq('region', app.currentRegion).eq('status', 'PENDING');
-                let verifyContainer = document.getElementById('admin-verification-list');
-                verifyContainer.innerHTML = '';
-                
-                if(outlets && outlets.length > 0) {
-                    outlets.forEach(o => {
-                        verifyContainer.innerHTML += `
-                            <div class="verification-row">
-                                <strong>${o.name}</strong> (Sales: ${o.sales})<br>
-                                Alamat: ${o.addr}<br>
-                                <button class="btn btn-success btn-sm" onclick="adminMgr.verifyOutlet('${o.id_toko}', 'VERIFIED')">✔ Verifikasi</button>
-                            </div>
-                        `;
-                    });
-                } else {
-                    verifyContainer.innerHTML = '<p style="color:var(--text-light); text-align:center;">Tidak ada antrean toko baru.</p>';
-                }
-            },
-            verifyOutlet: async function(idToko, status) {
-                const { error } = await supabaseClient.from('outlets').update({ status }).eq('id_toko', idToko);
-                if(error) alert("Gagal update: " + error.message);
-                else {
-                    alert("Status toko diperbarui!");
-                    this.syncData();
-                }
+            if (!name || isNaN(qty) || isNaN(price)) {
+                alert('Lengkapi data produk dengan benar!');
+                return;
             }
-        };
 
-        let logMgr = {
-            loadLog: async function() {
-                let { data: logs } = await supabaseClient.from('transactions').select('*').eq('region', app.currentRegion).eq('sales', app.currentUser);
-                let container = document.getElementById('log-container');
-                container.innerHTML = '';
-                if(logs && logs.length > 0) {
-                    logs.reverse().forEach(l => {
-                        container.innerHTML += `<div class="trx-audit-row"><strong>${l.outlet}</strong><br>Rp ${l.totalVal.toLocaleString()} (${l.time})</div>`;
-                    });
-                } else {
-                    container.innerHTML = '<p style="text-align:center; color:var(--text-light);">Belum ada transaksi hari ini.</p>';
-                }
+            currentCart.push({ name, qty, price });
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodQty').value = '';
+            document.getElementById('prodPrice').value = '';
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartList');
+            if (currentCart.length === 0) {
+                container.innerHTML = '<span class="text-slate-400 italic">Belum ada item produk dalam transaksi.</span>';
+                return;
             }
-        };
+            container.innerHTML = currentCart.map((item, index) => `
+                <div class="flex justify-between items-center bg-white p-2 rounded border">
+                    <span><b>${item.name}</b> (${item.qty} pcs) - Rp ${item.price.toLocaleString()}</span>
+                    <button type="button" onclick="currentCart.splice(${index},1);renderCart()" class="text-red-500 hover:text-red-700 text-xs font-bold">Hapus</button>
+                </div>
+            `).join('');
+        }
+
+        // Submit Outlet ke Supabase
+        async function submitOutlet(e) {
+            e.preventDefault();
+            const payload = {
+                id_toko: 'TKG-' + Math.floor(100000 + Math.random() * 900000),
+                name: document.getElementById('regName').value,
+                phone: document.getElementById('regPhone').value,
+                addr: document.getElementById('regAddr').value,
+                region: document.getElementById('regRegion').value,
+                gps: document.getElementById('regGps').value || '-6.2, 106.8',
+                sales: currentUser,
+                status: 'VERIFIED'
+            };
+
+            const { data, error } = await supabaseClient.from('outlets').insert([payload]);
+            if (error) {
+                alert('Gagal menyimpan toko: ' + error.message);
+            } else {
+                alert('Berhasil mendaftarkan toko baru!');
+                e.target.reset();
+            }
+        }
+
+        // Submit Transaksi ke Supabase
+        async function submitTransaction(e) {
+            e.preventDefault();
+            if (currentCart.length === 0) {
+                alert('Tambahkan minimal 1 produk ke keranjang!');
+                return;
+            }
+
+            const totalVal = currentCart.reduce((sum, item) => sum + item.price, 0);
+            const totalVol = currentCart.reduce((sum, item) => sum + item.qty, 0);
+            const now = new Date();
+
+            const payload = {
+                time: now.toLocaleTimeString(),
+                date: now.toISOString().split('T')[0],
+                sales: currentUser,
+                region: document.getElementById('transRegion').value,
+                outlet: document.getElementById('transOutlet').value,
+                outletType: document.getElementById('transOutletType').value,
+                items: currentCart,
+                totalVal: totalVal,
+                totalVol: totalVol,
+                gpsTrans: document.getElementById('transGps').value || '-6.2, 106.8'
+            };
+
+            const { data, error } = await supabaseClient.from('transactions').insert([payload]);
+            if (error) {
+                alert('Gagal mengirim transaksi: ' + error.message);
+            } else {
+                alert('Transaksi berhasil dikirim ke server!');
+                currentCart = [];
+                renderCart();
+                e.target.reset();
+            }
+        }
+
+        // Load Data Admin / SPV
+        async function loadAdminData() {
+            // Fetch Outlets
+            const { data: outlets, error: errOutlets } = await supabaseClient.from('outlets').select('*');
+            if (!errOutlets && outlets) {
+                document.getElementById('statOutlets').innerText = `${outlets.length} Toko`;
+                document.getElementById('tableOutletsBody').innerHTML = outlets.length ? outlets.map(o => `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-3 font-mono font-bold text-xs">${o.id_toko || '-'}</td>
+                        <td class="p-3 font-semibold">${o.name}</td>
+                        <td class="p-3 text-slate-500 text-xs">${o.addr}</td>
+                        <td class="p-3">${o.region}</td>
+                        <td class="p-3">${o.sales}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-700">${o.status}</span></td>
+                    </tr>
+                `).join('') : `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada data outlet.</td></tr>`;
+            }
+
+            // Fetch Transactions
+            const { data: trans, error: errTrans } = await supabaseClient.from('transactions').select('*');
+            if (!errTrans && trans) {
+                document.getElementById('statTransactions').innerText = `${trans.length} Transaksi`;
+                const totalOmzet = trans.reduce((sum, t) => sum + (t.totalVal || 0), 0);
+                document.getElementById('statOmzet').innerText = `Rp ${totalOmzet.toLocaleString()}`;
+
+                document.getElementById('tableTransBody').innerHTML = trans.length ? trans.map(t => {
+                    let itemsStr = '-';
+                    if (Array.isArray(t.items)) {
+                        itemsStr = t.items.map(i => `${i.name} (${i.qty}x)`).join(', ');
+                    }
+                    return `
+                        <tr class="border-b hover:bg-slate-50">
+                            <td class="p-3 text-xs text-slate-500">${t.date} ${t.time}</td>
+                            <td class="p-3 font-semibold">${t.sales}</td>
+                            <td class="p-3">${t.outlet}</td>
+                            <td class="p-3">${t.outletType || '-'}</td>
+                            <td class="p-3 font-bold text-emerald-600">Rp ${(t.totalVal || 0).toLocaleString()}</td>
+                            <td class="p-3 text-xs text-slate-600">${itemsStr}</td>
+                        </tr>
+                    `;
+                }).join('') : `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada data transaksi.</td></tr>`;
+            }
+        }
+
+        // Tombol Inject Dummy Data Otomatis Buat Admin/SPV
+        async function injectDummyData() {
+            const dummyOutlet = {
+                id_toko: 'TKG-' + Math.floor(100000 + Math.random() * 900000),
+                name: 'Toko Dummy Berkah Jaya',
+                phone: '081299887766',
+                addr: 'Jl. Ahmad Yani No. 45',
+                region: 'AREA-A',
+                gps: '-6.211111, 106.822222',
+                sales: 'A 01',
+                status: 'VERIFIED'
+            };
+
+            const dummyTrans = {
+                time: '10:30:00',
+                date: new Date().toISOString().split('T')[0],
+                sales: 'A 01',
+                region: 'AREA-A',
+                outlet: 'Toko Dummy Berkah Jaya',
+                outletType: 'Grosir',
+                items: [{ name: 'Produk Nu ESP A', qty: 5, price: 150000 }],
+                totalVal: 150000,
+                totalVol: 5,
+                gpsTrans: '-6.211111, 106.822222'
+            };
+
+            await supabaseClient.from('outlets').insert([dummyOutlet]);
+            await supabaseClient.from('transactions').insert([dummyTrans]);
+            
+            alert('Data dummy berhasil di-inject ke database!');
+            loadAdminData();
+        }
     </script>
 </body>
 </html>

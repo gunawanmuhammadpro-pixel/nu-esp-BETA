@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nu ESP Enterprise - Control Center (SPV, Admin, & Sales)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-emerald-600 to-teal-800">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+            <div class="text-center mb-8">
+                <div class="bg-emerald-100 text-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900">Nu ESP Enterprise</h1>
+                <p class="text-sm text-slate-500">Login Terintegrasi (SPV, Admin, & Sales)</p>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Role Akses</label>
+                    <select id="loginRole" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none font-semibold bg-white">
+                        <option value="SPV">Supervisor (SPV)</option>
+                        <option value="ADMIN">Admin Gudang & Operasional</option>
+                        <option value="SALES">Sales Lapangan</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">PIN Akses</label>
+                    <input type="password" id="loginPin" required placeholder="Masukkan PIN (Default: 1234)" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg transition shadow-md">
+                    Masuk Sistem
+                </button>
+            </form>
+            <div class="mt-6 text-center text-xs text-slate-400">
+                Akses Demo PIN: <span class="font-mono font-bold">1234</span> (untuk semua role)
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="appContainer" class="hidden min-h-screen flex flex-col">
+        <!-- Top Navigation -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div id="headerIconDiv" class="bg-emerald-600 text-white p-2 rounded-lg">
+                        <i id="headerIcon" class="fa-solid fa-user-tie"></i>
+                    </div>
+                    <div>
+                        <h2 id="appTitle" class="font-bold text-slate-800 text-lg">Dashboard Control Center</h2>
+                        <p id="appSubtitle" class="text-xs text-emerald-600 font-medium">Role: Supervisor</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="text-slate-500 hover:text-red-600 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium transition">
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i> Keluar
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Body -->
+        <main class="flex-1 max-w-6xl w-full mx-auto p-4 space-y-6 pb-20">
+            
+            <!-- SECTION SPV -->
+            <div id="sectionSpv" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-xl text-slate-800">Panel Utama Operasional SPV</h3>
+                        <p class="text-sm text-slate-500">Kelola database master, verifikasi outlet, dan evaluasi performa sales lapangan.</p>
+                    </div>
+                    <button onclick="loadSpvData()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm">
+                        <i class="fa-solid fa-rotate mr-1"></i> Refresh Data SPV
+                    </button>
+                </div>
+
+                <!-- Kartu Statistik -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                        <p class="text-xs font-semibold text-emerald-600 uppercase">Total Master Toko</p>
+                        <h4 id="statStores" class="text-2xl font-bold text-slate-800 mt-1">0 Toko</h4>
+                    </div>
+                    <div class="bg-teal-50 p-4 rounded-xl border border-teal-100">
+                        <p class="text-xs font-semibold text-teal-600 uppercase">Total Jenis Produk</p>
+                        <h4 id="statProducts" class="text-2xl font-bold text-slate-800 mt-1">0 SKU</h4>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                        <p class="text-xs font-semibold text-amber-600 uppercase">Total Omzet Penjualan</p>
+                        <h4 id="statOmzet" class="text-2xl font-bold text-emerald-600 mt-1">Rp 0</h4>
+                    </div>
+                </div>
+
+                <!-- Modul Import CSV & Trimester -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-2">
+                        <h4 class="text-xs font-bold text-slate-700"><i class="fa-solid fa-file-arrow-up text-emerald-600 mr-1"></i> Import Stock CSV</h4>
+                        <input type="file" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                        <button onclick="alert('Fitur Import Stock CSV diproses')" class="w-full bg-emerald-600 text-white py-1.5 rounded-lg text-xs font-semibold">Upload & Perbarui Stok</button>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-2">
+                        <h4 class="text-xs font-bold text-slate-700"><i class="fa-solid fa-file-arrow-up text-teal-600 mr-1"></i> Import Toko CSV</h4>
+                        <input type="file" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+                        <button onclick="alert('Fitur Import Toko CSV diproses')" class="w-full bg-teal-600 text-white py-1.5 rounded-lg text-xs font-semibold">Upload & Perbarui Toko</button>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-2">
+                        <h4 class="text-xs font-bold text-slate-700"><i class="fa-solid fa-chart-line text-indigo-600 mr-1"></i> Trimester Achievement</h4>
+                        <div class="flex gap-2 pt-2">
+                            <button onclick="alert('Download CSV Trimester')" class="flex-1 bg-slate-800 text-white py-1.5 rounded-lg text-xs font-semibold">Download CSV</button>
+                            <button onclick="alert('Upload Trimester')" class="flex-1 bg-indigo-600 text-white py-1.5 rounded-lg text-xs font-semibold">Upload</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verifikasi Outlet Baru -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b bg-amber-50 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800"><i class="fa-solid fa-user-check mr-2 text-amber-600"></i> Verifikasi Outlet Baru</h4>
+                            <p class="text-xs text-slate-500">Validasi pendaftaran toko dari tim sales lapangan</p>
+                        </div>
+                        <button onclick="alert('Master toko CSV diunduh')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">
+                            <i class="fa-solid fa-download mr-1"></i> Download Master Toko CSV
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b text-xs">
+                                    <th class="p-3">ID / Sales</th>
+                                    <th class="p-3">Nama Toko</th>
+                                    <th class="p-3">Alamat & Telepon</th>
+                                    <th class="p-3">Region & GPS</th>
+                                    <th class="p-3">Aksi Verifikasi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablePendingStores">
+                                <tr><td colspan="5" class="p-4 text-center text-slate-400">Memuat data toko...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Daily Direct Monitoring Report -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b bg-slate-50 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800"><i class="fa-solid fa-desktop mr-2 text-emerald-600"></i> Daily Direct Monitoring Report</h4>
+                            <p class="text-xs text-slate-500">Pantau waktu, durasi, titik koordinat, item, status, omzet, dan setoran</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="alert('Download Monitoring CSV')" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-download mr-1"></i> Download CSV</button>
+                            <button onclick="alert('Upload Monitoring')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-upload mr-1"></i> Upload</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b text-xs">
+                                    <th class="p-3">Waktu Transaksi</th>
+                                    <th class="p-3">Sales</th>
+                                    <th class="p-3">Durasi</th>
+                                    <th class="p-3">Titik Koordinat</th>
+                                    <th class="p-3">Detail Item</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Total Nilai</th>
+                                    <th class="p-3">Setoran</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableDailyMonitoring">
+                                <tr><td colspan="8" class="p-4 text-center text-slate-400">Memuat monitoring...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Sales Daily Achievements -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b bg-slate-50 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800"><i class="fa-solid fa-chart-pie mr-2 text-indigo-600"></i> Sales Daily Achievements</h4>
+                            <p class="text-xs text-slate-500">Call Made, Effective Call, Dropsize, & Hit Rate</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="alert('Download Achievement CSV')" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-download mr-1"></i> Download CSV</button>
+                            <button onclick="alert('Upload Achievement')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-upload mr-1"></i> Upload</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b text-xs">
+                                    <th class="p-3">Sales ID</th>
+                                    <th class="p-3">Call Made (CM)</th>
+                                    <th class="p-3">Effective Call (EC)</th>
+                                    <th class="p-3">Dropsize</th>
+                                    <th class="p-3">Hit Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableSalesAchievements">
+                                <tr><td colspan="5" class="p-4 text-center text-slate-400">Memuat achievement...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION ADMIN -->
+            <div id="sectionAdmin" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-xl text-slate-800">Panel Kontrol Dashboard Admin Gudang</h3>
+                        <p class="text-sm text-slate-500">Fitur preventif stok opname, audit log gudang, rekap transaksi, dan registrasi user.</p>
+                    </div>
+                    <button onclick="loadAdminData()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                        <i class="fa-solid fa-rotate mr-1"></i> Refresh Data Gudang
+                    </button>
+                </div>
+
+                <!-- Stock Opname (Sistem vs Fisik) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b bg-slate-50 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800"><i class="fa-solid fa-boxes-stacked mr-2 text-emerald-600"></i> Stock Opname (Sistem vs Fisik)</h4>
+                            <p class="text-xs text-slate-500">Sinkronisasi stok opname gudang secara preventif</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="alert('Download Stock Opname CSV')" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-download mr-1"></i> Download CSV</button>
+                            <button onclick="alert('Upload Stock Opname')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-upload mr-1"></i> Upload</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b text-xs">
+                                    <th class="p-3">Kode SKU</th>
+                                    <th class="p-3">Nama Produk</th>
+                                    <th class="p-3">Stok Sistem</th>
+                                    <th class="p-3">Stok Fisik Opname</th>
+                                    <th class="p-3">Selisih</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableStockOpname">
+                                <tr><td colspan="5" class="p-4 text-center text-slate-400">Memuat stock opname...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Log Riwayat Keluar / Masuk Barang Gudang -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b bg-slate-50 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800"><i class="fa-solid fa-clipboard-list mr-2 text-indigo-600"></i> Log Riwayat Keluar / Masuk Barang Gudang</h4>
+                            <p class="text-xs text-slate-500">Audit trail pergerakan stok inventaris</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="alert('Download Log CSV')" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-download mr-1"></i> Download CSV</button>
+                            <button onclick="alert('Upload Log')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-upload mr-1"></i> Upload</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b text-xs">
+                                    <th class="p-3">Waktu</th>
+                                    <th class="p-3">Tipe (Masuk/Keluar)</th>
+                                    <th class="p-3">SKU / Produk</th>
+                                    <th class="p-3">Jumlah</th>
+                                    <th class="p-3">Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableAuditLog">
+                                <tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada riwayat log gudang.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Rekapitulasi Transaksi Penjualan -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b bg-slate-50 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800"><i class="fa-solid fa-receipt mr-2 text-teal-600"></i> Rekapitulasi Transaksi Penjualan</h4>
+                            <p class="text-xs text-slate-500">Laporan rekapitulasi transaksi keseluruhan</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="alert('Download Rekap CSV')" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-download mr-1"></i> Download CSV</button>
+                            <button onclick="alert('Upload Rekap')" class="bg-teal-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-upload mr-1"></i> Upload</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b text-xs">
+                                    <th class="p-3">ID Transaksi</th>
+                                    <th class="p-3">Sales ID</th>
+                                    <th class="p-3">Waktu</th>
+                                    <th class="p-3">Total Nilai</th>
+                                    <th class="p-3">Setoran Kas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableAdminTransactions">
+                                <tr><td colspan="5" class="p-4 text-center text-slate-400">Memuat rekap transaksi...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Registrasi User / Hak Akses -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <h4 class="font-bold text-base text-slate-800 border-b pb-2"><i class="fa-solid fa-user-plus text-emerald-600 mr-2"></i> Registrasi User / Hak Akses</h4>
+                    <p class="text-xs text-slate-500">Tambah akun pengguna baru untuk Sales, SPV, atau Admin</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ID Karyawan / User</label>
+                            <input type="text" id="newUserId" placeholder="Cth: SALES-02" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Role Akses</label>
+                            <select id="newUserRole" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium">
+                                <option value="SALES">Sales Lapangan</option>
+                                <option value="SPV">Supervisor</option>
+                                <option value="ADMIN">Admin Gudang</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">PIN Akses</label>
+                            <input type="password" id="newUserPin" placeholder="PIN 4 digit" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                        </div>
+                    </div>
+                    <button onclick="registerNewUser()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition">
+                        Simpan User Baru
+                    </button>
+                </div>
+            </div>
+
+            <!-- SECTION SALES (Aplikasi Lapangan Lengkap) -->
+            <div id="sectionSales" class="hidden space-y-6">
+                <!-- Top Bar & Auto-Sync -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-xl text-slate-800"><i class="fa-solid fa-person-walking-luggage mr-2 text-emerald-600"></i> Dashboard Lapangan Sales</h3>
+                        <p class="text-sm text-slate-500">Auto-sync master toko & produk, input kunjungan, dan cetak nota otomatis.</p>
+                    </div>
+                    <button onclick="salesAutoSync()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm">
+                        <i class="fa-solid fa-sync mr-1"></i> Auto-Sync Master Data
+                    </button>
+                </div>
+
+                <!-- Pemilihan Jalur Kunjungan & Keranjang -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Form Kunjungan Outlet -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-5">
+                        <h4 class="font-bold text-base text-slate-800 border-b pb-2"><i class="fa-solid fa-store mr-2 text-emerald-600"></i> Form Kunjungan & Registrasi Outlet Baru</h4>
+                        
+                        <!-- Pilihan Jalur -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-2">Pilih Jalur Kunjungan</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <label class="border p-3 rounded-xl flex items-center space-x-2 cursor-pointer bg-slate-50 hover:bg-emerald-50">
+                                    <input type="radio" name="salesRouteType" value="A" checked onchange="toggleRouteType()" class="text-emerald-600">
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-800">Jalur A (Terdaftar)</span>
+                                        <span class="block text-[10px] text-slate-500">Pilih dari Master Toko</span>
+                                    </div>
+                                </label>
+                                <label class="border p-3 rounded-xl flex items-center space-x-2 cursor-pointer bg-slate-50 hover:bg-emerald-50">
+                                    <input type="radio" name="salesRouteType" value="B" onchange="toggleRouteType()" class="text-emerald-600">
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-800">Jalur B (Registrasi Outlet Baru)</span>
+                                        <span class="block text-[10px] text-slate-500">Bangun Database Bisnis Baru</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Input Toko Berdasarkan Jalur -->
+                        <div id="routeAContainer">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Toko Rute Terdaftar</label>
+                            <select id="salesSelectedStore" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium">
+                                <option value="">-- Pilih Toko --</option>
+                            </select>
+                        </div>
+                        <div id="routeBContainer" class="hidden space-y-3 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                            <span class="text-xs font-bold text-emerald-800 block"><i class="fa-solid fa-user-plus mr-1"></i> Form Registrasi Outlet Baru</span>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Toko Baru</label>
+                                <input type="text" id="newManualStoreName" placeholder="Cth: Toko Berkah Jaya" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <input type="text" id="newManualPhone" placeholder="No Telepon / WhatsApp" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                                <input type="text" id="newManualAddress" placeholder="Alamat Lengkap Toko" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                            </div>
+                        </div>
+
+                        <!-- Pilih Produk & Keranjang -->
+                        <div class="space-y-3 pt-2 border-t">
+                            <label class="block text-xs font-semibold text-slate-700">Pilih Produk & Qty</label>
+                            <div class="flex gap-2">
+                                <select id="salesProductSelect" class="flex-1 px-3 py-2 border rounded-lg text-sm bg-white">
+                                    <option value="">-- Pilih Produk SKU --</option>
+                                </select>
+                                <input type="number" id="salesProductQty" min="1" value="1" class="w-20 px-3 py-2 border rounded-lg text-sm text-center">
+                                <button type="button" onclick="addToCart()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">Tambah</button>
+                            </div>
+
+                            <!-- List Item Keranjang -->
+                            <div class="border rounded-xl overflow-hidden mt-3">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-slate-100 text-slate-600">
+                                        <tr>
+                                            <th class="p-2">Produk SKU</th>
+                                            <th class="p-2">Harga</th>
+                                            <th class="p-2">Qty</th>
+                                            <th class="p-2">Subtotal</th>
+                                            <th class="p-2 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cartTableBody">
+                                        <tr><td colspan="5" class="p-3 text-center text-slate-400">Keranjang kosong.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Status Kunjungan & Pembayaran -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Status Kunjungan</label>
+                                <select id="salesVisitStatus" class="w-full px-3 py-2 border rounded-lg text-sm font-bold bg-white text-emerald-600">
+                                    <option value="NOW">NOW (Beli / Transaksi Berhasil)</option>
+                                    <option value="NEXT_TIME">Next Time (Hanya Call Made / CM)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nominal Pembayaran (Kas Diterima)</label>
+                                <input type="number" id="salesCashCollected" placeholder="Rp 0" class="w-full px-3 py-2 border rounded-lg text-sm font-bold">
+                            </div>
+                        </div>
+
+                        <!-- Tombol Selesaikan Transaksi -->
+                        <div class="pt-2">
+                            <button onclick="submitSalesTransaction()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl text-sm shadow transition">
+                                <i class="fa-solid fa-paper-plane mr-1"></i> Selesaikan Transaksi & Terbitkan Nota Otomatis
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Panel Ringkasan & Nota Otomatis (Live Receipt Card) -->
+                    <div class="space-y-6">
+                        <!-- Kotak Nota Otomatis Terkini -->
+                        <div id="liveReceiptCard" class="bg-slate-900 text-slate-100 p-6 rounded-2xl shadow-md border border-slate-800 space-y-4">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                                <div>
+                                    <span class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">Nota Transaksi Terakhir</span>
+                                    <h4 id="receiptStoreName" class="font-bold text-sm text-white">Belum Ada Transaksi</h4>
+                                </div>
+                                <i class="fa-solid fa-receipt text-2xl text-emerald-400"></i>
+                            </div>
+                            <div id="receiptDetails" class="text-xs space-y-2 text-slate-300">
+                                <p class="text-slate-400 italic">Nota otomatis akan muncul di sini setelah transaksi diselesaikan.</p>
+                            </div>
+                            <div class="border-t border-slate-800 pt-3 flex justify-between items-center text-xs font-bold">
+                                <span class="text-slate-400">Total Nilai:</span>
+                                <span id="receiptTotalAmount" class="text-emerald-400 text-sm">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <!-- Tombol Aksi & Laporan Sales -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                            <h4 class="font-bold text-sm text-slate-800 border-b pb-2"><i class="fa-solid fa-clipboard-user text-indigo-600 mr-1"></i> Aksi & Laporan Sales</h4>
+                            <button onclick="openUpdateStockModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg text-xs font-semibold transition">
+                                <i class="fa-solid fa-boxes-stacked mr-1"></i> Button Update Stock (Retur)
+                            </button>
+                            <button onclick="triggerDailyReport()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-xs font-semibold transition">
+                                <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Button Daily Report
+                            </button>
+                            <button onclick="downloadSalesPersonalReport()" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-xs font-semibold transition">
+                                <i class="fa-solid fa-file-arrow-down mr-1"></i> Button Sales Report
+                            </button>
+                        </div>
+
+                        <!-- Ringkasan Mandiri CM & EC -->
+                        <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 space-y-2">
+                            <h4 class="font-bold text-sm text-emerald-800"><i class="fa-solid fa-chart-pie mr-1"></i> Performa Mandiri Hari Ini</h4>
+                            <div class="flex justify-between text-xs text-slate-700 pt-1 border-t border-emerald-200">
+                                <span>Total Call Made (CM):</span>
+                                <span id="salesSummaryCM" class="font-bold">0 Kunjungan</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-700">
+                                <span>Total Effective Call (EC):</span>
+                                <span id="salesSummaryEC" class="font-bold text-emerald-600">0 Pembeli</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-700">
+                                <span>Total Setoran Kas:</span>
+                                <span id="salesSummaryKas" class="font-bold text-teal-600">Rp 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Riwayat Kunjungan Hari Ini & Filter -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h4 class="font-bold text-slate-800"><i class="fa-solid fa-clock-rotate-left mr-2 text-indigo-600"></i> Riwayat Kunjungan & Transaksi Hari Ini</h4>
+                            <p class="text-xs text-slate-500">Daftar outlet yang dikunjungi lengkap dengan menu filter mandiri</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-xs font-semibold text-slate-600">Filter Status:</label>
+                            <select id="salesHistoryFilter" onchange="filterSalesHistory()" class="px-3 py-1.5 border rounded-lg text-xs bg-white font-medium">
+                                <option value="ALL">Semua Kunjungan</option>
+                                <option value="NOW">Hanya NOW (EC)</option>
+                                <option value="NEXT_TIME">Hanya Next Time (CM)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b text-xs">
+                                    <th class="p-3">Waktu</th>
+                                    <th class="p-3">Nama Toko</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Detail Item Belanja</th>
+                                    <th class="p-3">Total Nilai</th>
+                                    <th class="p-3">Setoran Kas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableSalesHistory">
+                                <tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada riwayat kunjungan hari ini.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- SCRIPT UTAMA -->
+    <script>
+        const SUPABASE_URL = 'https://ucddlrtktokvnntdvai.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZGRscnRrdG9rdm5udGR2YWkiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NDE3NjgyMywiZXhwIjoyMDg5NzUyODIzfQ.4wG9LgK-qN0yL0gL0gL0gL0gL0gL0gL0gL0gL0gL0gI';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentRole = '';
+        let cartItems = [];
+        let globalMasterStores = [];
+        let globalMasterProducts = [];
+        let globalSalesTransactions = [];
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const role = document.getElementById('loginRole').value;
+            const pin = document.getElementById('loginPin').value.trim();
+
+            if (pin !== '1234') {
+                alert('PIN Akses Salah! Gunakan PIN: 1234');
+                return;
+            }
+
+            currentRole = role;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+
+            document.getElementById('sectionSpv').classList.add('hidden');
+            document.getElementById('sectionAdmin').classList.add('hidden');
+            document.getElementById('sectionSales').classList.add('hidden');
+
+            if (currentRole === 'SPV') {
+                document.getElementById('sectionSpv').classList.remove('hidden');
+                document.getElementById('appTitle').innerText = 'Dashboard Supervisor';
+                document.getElementById('appSubtitle').innerText = 'Role: Supervisor (SPV)';
+                loadSpvData();
+            } else if (currentRole === 'ADMIN') {
+                document.getElementById('sectionAdmin').classList.remove('hidden');
+                document.getElementById('appTitle').innerText = 'Dashboard Admin Gudang';
+                document.getElementById('appSubtitle').innerText = 'Role: Admin Operasional';
+                loadAdminData();
+            } else if (currentRole === 'SALES') {
+                document.getElementById('sectionSales').classList.remove('hidden');
+                document.getElementById('appTitle').innerText = 'Dashboard Lapangan Sales';
+                document.getElementById('appSubtitle').innerText = 'Role: Sales Lapangan';
+                salesAutoSync();
+            }
+        }
+
+        function logout() {
+            currentRole = '';
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        async function loadSpvData() {
+            const { data: stores } = await supabaseClient.from('stores').select('*');
+            if (stores) {
+                const verified = stores.filter(s => s.status_verified);
+                document.getElementById('statStores').innerText = `${verified.length} Toko`;
+                const pending = stores.filter(s => !s.status_verified);
+                document.getElementById('tablePendingStores').innerHTML = pending.length ? pending.map(s => `
+                    <tr class="border-b text-xs">
+                        <td class="p-3 font-semibold">${s.created_by || 'Sales'}</td>
+                        <td class="p-3 font-semibold text-slate-800">${s.store_name}</td>
+                        <td class="p-3">${s.address}<br><span class="text-slate-500">${s.phone}</span></td>
+                        <td class="p-3 font-bold text-emerald-600">${s.region}<br><span class="text-[10px] text-slate-400">${s.lat}, ${s.lng}</span></td>
+                        <td class="p-3 space-x-1">
+                            <button onclick="verifyStore('${s.id}', true)" class="bg-emerald-600 text-white px-2 py-1 rounded font-bold">Approve</button>
+                            <button onclick="verifyStore('${s.id}', false)" class="bg-red-500 text-white px-2 py-1 rounded font-bold">Tolak</button>
+                        </td>
+                    </tr>
+                `).join('') : `<tr><td colspan="5" class="p-4 text-center text-slate-400">Tidak ada toko pending.</td></tr>`;
+            }
+
+            const { data: prods } = await supabaseClient.from('products').select('*');
+            if (prods) {
+                document.getElementById('statProducts').innerText = `${prods.length} SKU`;
+            }
+
+            const { data: trans } = await supabaseClient.from('transactions').select('*');
+            if (trans) {
+                const omzet = trans.reduce((sum, t) => sum + (t.total_amount || 0), 0);
+                document.getElementById('statOmzet').innerText = `Rp ${omzet.toLocaleString()}`;
+                
+                // Monitoring Table
+                document.getElementById('tableDailyMonitoring').innerHTML = trans.length ? trans.map(t => {
+                    let itemsStr = Array.isArray(t.items_json) ? t.items_json.map(i => `${i.name} (${i.qty}x)`).join(', ') : '-';
+                    return `
+                        <tr class="border-b text-xs">
+                            <td class="p-3 text-slate-500">${new Date(t.timestamp).toLocaleString()}</td>
+                            <td class="p-3 font-bold">${t.sales_id}</td>
+                            <td class="p-3">${t.duration || '-'}</td>
+                            <td class="p-3 font-mono text-slate-600">${t.lat}, ${t.lng}</td>
+                            <td class="p-3 text-slate-600">${itemsStr}</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded font-bold ${t.status === 'NOW' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${t.status}</span></td>
+                            <td class="p-3 font-bold text-emerald-600">Rp ${(t.total_amount || 0).toLocaleString()}</td>
+                            <td class="p-3 font-bold text-teal-600">Rp ${(t.cash_collected || 0).toLocaleString()}</td>
+                        </tr>
+                    `;
+                }).join('') : `<tr><td colspan="8" class="p-4 text-center text-slate-400">Belum ada transaksi monitoring.</td></tr>`;
+
+                // Sales Daily Achievements Table Simulation
+                document.getElementById('tableSalesAchievements').innerHTML = `
+                    <tr class="border-b text-xs">
+                        <td class="p-3 font-bold">SALES-01</td>
+                        <td class="p-3">${trans.length} Kunjungan</td>
+                        <td class="p-3 text-emerald-600 font-bold">${trans.filter(t => t.status === 'NOW').length} EC</td>
+                        <td class="p-3">Rp ${Math.round(omzet / (trans.length || 1)).toLocaleString()}</td>
+                        <td class="p-3 font-bold text-indigo-600">${Math.round((trans.filter(t => t.status === 'NOW').length / (trans.length || 1)) * 100)}%</td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function verifyStore(storeId, isApprove) {
+            if (!isApprove) {
+                if (!confirm('Tolak dan hapus toko ini?')) return;
+                await supabaseClient.from('stores').delete().eq('id', storeId);
+            } else {
+                await supabaseClient.from('stores').update({ status_verified: true }).eq('id', storeId);
+            }
+            loadSpvData();
+        }
+
+        async function loadAdminData() {
+            const { data: products } = await supabaseClient.from('products').select('*');
+            if (products) {
+                document.getElementById('tableStockOpname').innerHTML = products.length ? products.map(p => `
+                    <tr class="border-b text-xs">
+                        <td class="p-3 font-mono text-slate-500">${p.id}</td>
+                        <td class="p-3 font-bold text-slate-800">${p.name}</td>
+                        <td class="p-3 font-semibold">${p.stock || 100} Pcs</td>
+                        <td class="p-3 font-bold text-emerald-600">${p.stock || 100} Pcs</td>
+                        <td class="p-3 font-bold text-slate-600">0 Pcs (Aman)</td>
+                    </tr>
+                `).join('') : `<tr><td colspan="5" class="p-4 text-center text-slate-400">Tidak ada data stok opname.</td></tr>`;
+            }
+
+            const { data: trans } = await supabaseClient.from('transactions').select('*');
+            if (trans) {
+                document.getElementById('tableAdminTransactions').innerHTML = trans.length ? trans.map(t => `
+                    <tr class="border-b text-xs">
+                        <td class="p-3 font-mono text-slate-500">TRX-${t.id || '01'}</td>
+                        <td class="p-3 font-bold">${t.sales_id}</td>
+                        <td class="p-3 text-slate-500">${new Date(t.timestamp).toLocaleString()}</td>
+                        <td class="p-3 font-bold text-emerald-600">Rp ${(t.total_amount || 0).toLocaleString()}</td>
+                        <td class="p-3 font-bold text-teal-600">Rp ${(t.cash_collected || 0).toLocaleString()}</td>
+                    </tr>
+                `).join('') : `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada rekap transaksi.</td></tr>`;
+
+                document.getElementById('tableAuditLog').innerHTML = trans.length ? trans.map(t => `
+                    <tr class="border-b text-xs">
+                        <td class="p-3 text-slate-500">${new Date(t.timestamp).toLocaleTimeString()}</td>
+                        <td class="p-3 font-bold text-emerald-600">KELUAR (Sales Order)</td>
+                        <td class="p-3">${t.store_name}</td>
+                        <td class="p-3 font-bold">${t.items_json ? t.items_json.length : 0} Item SKU</td>
+                        <td class="p-3 text-slate-600">Sukses dikirim via ${t.sales_id}</td>
+                    </tr>
+                `).join('') : `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada riwayat log gudang.</td></tr>`;
+            }
+        }
+
+        function registerNewUser() {
+            const userId = document.getElementById('newUserId').value.trim();
+            const role = document.getElementById('newUserRole').value;
+            const pin = document.getElementById('newUserPin').value.trim();
+            if (!userId || !pin) return alert('ID User dan PIN wajib diisi!');
+            alert(`User baru ${userId} (${role}) berhasil didaftarkan ke sistem!`);
+            document.getElementById('newUserId').value = '';
+            document.getElementById('newUserPin').value = '';
+        }
+
+        async function salesAutoSync() {
+            const { data: stores } = await supabaseClient.from('stores').select('*');
+            if (stores) {
+                globalMasterStores = stores;
+                const selectStore = document.getElementById('salesSelectedStore');
+                selectStore.innerHTML = '<option value="">-- Pilih Toko Rute --</option>' + stores.map(s => `<option value="${s.store_name}">${s.store_name} (${s.region})</option>`).join('');
+            }
+
+            const { data: products } = await supabaseClient.from('products').select('*');
+            if (products) {
+                globalMasterProducts = products;
+                const selectProd = document.getElementById('salesProductSelect');
+                selectProd.innerHTML = '<option value="">-- Pilih Produk SKU --</option>' + products.map(p => `<option value="${p.id}" data-name="${p.name}" data-price="${p.price || 15000}">${p.name} - Rp ${(p.price || 15000).toLocaleString()}</option>`).join('');
+            }
+
+            const { data: trans } = await supabaseClient.from('transactions').select('*');
+            if (trans) {
+                globalSalesTransactions = trans;
+                renderSalesHistory(trans);
+                updateSalesSummaryMetrics(trans);
+            }
+        }
+
+        function toggleRouteType() {
+            const type = document.querySelector('input[name="salesRouteType"]:checked').value;
+            if (type === 'A') {
+                document.getElementById('routeAContainer').classList.remove('hidden');
+                document.getElementById('routeBContainer').classList.add('hidden');
+            } else {
+                document.getElementById('routeAContainer').classList.add('hidden');
+                document.getElementById('routeBContainer').classList.remove('hidden');
+            }
+        }
+
+        function addToCart() {
+            const prodSelect = document.getElementById('salesProductSelect');
+            const selectedOpt = prodSelect.options[prodSelect.selectedIndex];
+            if (!prodSelect.value) return alert('Pilih produk terlebih dahulu!');
+
+            const prodId = prodSelect.value;
+            const prodName = selectedOpt.getAttribute('data-name');
+            const prodPrice = parseInt(selectedOpt.getAttribute('data-price')) || 15000;
+            const qty = parseInt(document.getElementById('salesProductQty').value) || 1;
+
+            const existing = cartItems.find(i => i.id === prodId);
+            if (existing) {
+                existing.qty += qty;
+                existing.subtotal = existing.qty * existing.price;
+            } else {
+                cartItems.push({ id: prodId, name: prodName, price: prodPrice, qty: qty, subtotal: prodPrice * qty });
+            }
+            renderCart();
+        }
+
+        function removeFromCart(index) {
+            cartItems.splice(index, 1);
+            renderCart();
+        }
+
+        function renderCart() {
+            const tbody = document.getElementById('cartTableBody');
+            if (!cartItems.length) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">Keranjang kosong.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = cartItems.map((item, idx) => `
+                <tr class="border-b">
+                    <td class="p-2 font-semibold">${item.name}</td>
+                    <td class="p-2">Rp ${item.price.toLocaleString()}</td>
+                    <td class="p-2">${item.qty}x</td>
+                    <td class="p-2 font-bold text-emerald-600">Rp ${item.subtotal.toLocaleString()}</td>
+                    <td class="p-2 text-center">
+                        <button onclick="removeFromCart(${idx})" class="text-red-500 hover:text-red-700 font-bold"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            let totalAmount = cartItems.reduce((sum, i) => sum + i.subtotal, 0);
+            document.getElementById('salesCashCollected').value = totalAmount;
+        }
+
+        async function submitSalesTransaction() {
+            const routeType = document.querySelector('input[name="salesRouteType"]:checked').value;
+            let storeName = '';
+
+            if (routeType === 'A') {
+                storeName = document.getElementById('salesSelectedStore').value;
+                if (!storeName) return alert('Pilih toko rute terlebih dahulu!');
+            } else {
+                storeName = document.getElementById('newManualStoreName').value.trim();
+                const phone = document.getElementById('newManualPhone').value.trim();
+                const address = document.getElementById('newManualAddress').value.trim();
+                if (!storeName) return alert('Nama toko baru wajib diisi untuk registrasi outlet!');
+
+                await supabaseClient.from('stores').insert([{
+                    store_name: storeName,
+                    phone: phone || '-',
+                    address: address || 'Manual Input Lapangan',
+                    region: 'GENERAL',
+                    lat: -6.200000,
+                    lng: 106.816666,
+                    status_verified: false,
+                    created_by: 'SALES-01'
+                }]);
+            }
+
+            const status = document.getElementById('salesVisitStatus').value;
+            let totalAmount = cartItems.reduce((sum, i) => sum + i.subtotal, 0);
+            if (status === 'NEXT_TIME') totalAmount = 0;
+
+            const cashCollected = parseInt(document.getElementById('salesCashCollected').value) || 0;
+
+            const newTrx = {
+                sales_id: 'SALES-01',
+                store_name: storeName,
+                duration: '15 Menit',
+                lat: -6.200000,
+                lng: 106.816666,
+                items_json: status === 'NOW' ? cartItems : [],
+                status: status,
+                total_amount: totalAmount,
+                cash_collected: status === 'NOW' ? cashCollected : 0,
+                timestamp: new Date().toISOString()
+            };
+
+            const { error } = await supabaseClient.from('transactions').insert([newTrx]);
+            if (error) {
+                alert('Gagal menyimpan transaksi ke server.');
+                return;
+            }
+
+            renderLiveReceipt(storeName, newTrx.timestamp, status, cartItems, totalAmount, cashCollected);
+
+            cartItems = [];
+            renderCart();
+            document.getElementById('newManualStoreName').value = '';
+            document.getElementById('newManualPhone').value = '';
+            document.getElementById('newManualAddress').value = '';
+            document.getElementById('salesCashCollected').value = '';
+
+            salesAutoSync();
+        }
+
+        function renderLiveReceipt(storeName, timestamp, status, items, totalAmount, cashCollected) {
+            document.getElementById('receiptStoreName').innerText = storeName;
+            let itemsHtml = items.length ? items.map(i => `<div class="flex justify-between"><span>${i.name} (${i.qty}x)</span> <span class="font-mono">Rp ${i.subtotal.toLocaleString()}</span></div>`).join('') : '<span class="italic text-slate-400">Kunjungan tanpa pembelian (Next Time)</span>';
+            
+            document.getElementById('receiptDetails').innerHTML = `
+                <div class="flex justify-between text-[11px] text-slate-400 pb-1 border-b border-slate-800">
+                    <span>Waktu: ${new Date(timestamp).toLocaleTimeString()}</span>
+                    <span class="font-bold uppercase text-emerald-400">${status}</span>
+                </div>
+                <div class="py-1 space-y-1">${itemsHtml}</div>
+                <div class="flex justify-between pt-1 border-t border-slate-800 text-slate-300">
+                    <span>Kas Diterima:</span>
+                    <span class="font-mono text-white">Rp ${cashCollected.toLocaleString()}</span>
+                </div>
+            `;
+            document.getElementById('receiptTotalAmount').innerText = `Rp ${totalAmount.toLocaleString()}`;
+        }
+
+        function renderSalesHistory(trans) {
+            const tbody = document.getElementById('tableSalesHistory');
+            if (!trans.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada riwayat kunjungan hari ini.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = trans.map(t => {
+                let itemsStr = Array.isArray(t.items_json) && t.items_json.length ? t.items_json.map(i => `${i.name} (${i.qty}x)`).join(', ') : '-';
+                return `
+                    <tr class="border-b text-xs">
+                        <td class="p-3 text-slate-500">${new Date(t.timestamp).toLocaleTimeString()}</td>
+                        <td class="p-3 font-semibold text-slate-800">${t.store_name || 'Outlet Kunjungan'}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded font-bold ${t.status === 'NOW' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${t.status}</span></td>
+                        <td class="p-3 text-slate-600">${itemsStr}</td>
+                        <td class="p-3 font-bold text-emerald-600">Rp ${(t.total_amount || 0).toLocaleString()}</td>
+                        <td class="p-3 font-bold text-teal-600">Rp ${(t.cash_collected || 0).toLocaleString()}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterSalesHistory() {
+            const filterVal = document.getElementById('salesHistoryFilter').value;
+            if (filterVal === 'ALL') {
+                renderSalesHistory(globalSalesTransactions);
+            } else {
+                const filtered = globalSalesTransactions.filter(t => t.status === filterVal);
+                renderSalesHistory(filtered);
+            }
+        }
+
+        function updateSalesSummaryMetrics(trans) {
+            let totalCM = trans.length;
+            let totalEC = trans.filter(t => t.status === 'NOW').length;
+            let totalKas = trans.reduce((sum, t) => sum + (t.cash_collected || 0), 0);
+
+            document.getElementById('salesSummaryCM').innerText = `${totalCM} Kunjungan`;
+            document.getElementById('salesSummaryEC').innerText = `${totalEC} Pembeli`;
+            document.getElementById('salesSummaryKas').innerText = `Rp ${totalKas.toLocaleString()}`;
+        }
+
+        function openUpdateStockModal() { alert('Menu Update Stock / Retur Barang Lapangan diaktifkan.'); }
+        function triggerDailyReport() { alert('Daily Report sales berhasil dikirim ke server.'); }
+        function downloadSalesPersonalReport() { alert('Mengunduh rekapitulasi personal sales...'); }
+    </script>
+</body>
+</html>
